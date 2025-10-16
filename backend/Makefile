@@ -39,6 +39,11 @@ itest:
 	@echo "Running integration tests..."
 	@go test ./internal/database -v
 
+# Seed the database with initial Super Admin
+seed:
+	@echo "Seeding database..."
+	@go run cmd/seed/main.go
+
 # Clean the binary
 clean:
 	@echo "Cleaning..."
@@ -61,4 +66,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest
+.PHONY: all build run test clean watch docker-run docker-down itest seed
