@@ -1,11 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Login from '../views/Login.vue'
+import Dashboard from '../views/Dashboard.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/',
+      name: 'home',
+      component: Home
+    },
     {
       path: '/login',
       name: 'login',
@@ -13,10 +19,59 @@ const router = createRouter({
       meta: { requiresGuest: true }
     },
     {
-      path: '/',
-      name: 'home',
-      component: Home,
+      path: '/dashboard',
+      name: 'dashboard',
+      component: Dashboard,
       meta: { requiresAuth: true }
+    },
+    // Placeholder routes for dashboard features
+    {
+      path: '/sops',
+      name: 'sops',
+      component: () => import('../views/ComingSoon.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/referrals',
+      name: 'referrals',
+      component: () => import('../views/ComingSoon.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/registry',
+      name: 'registry',
+      component: () => import('../views/ComingSoon.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/documents',
+      name: 'documents',
+      component: () => import('../views/ComingSoon.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/training',
+      name: 'training',
+      component: () => import('../views/ComingSoon.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ComingSoon.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/ComingSoon.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../views/ComingSoon.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true }
     }
   ],
 })
@@ -29,10 +84,14 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'login' })
   } 
-  // Redirect authenticated users away from login
+  // Redirect authenticated users away from login to dashboard
   else if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    next({ name: 'home' })
-  } 
+    next({ name: 'dashboard' })
+  }
+  // Check if route requires admin
+  else if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    next({ name: 'dashboard' })
+  }
   else {
     next()
   }

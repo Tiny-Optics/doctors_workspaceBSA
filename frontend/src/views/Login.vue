@@ -180,8 +180,8 @@ const handleLogin = async () => {
   try {
     await authStore.login(credentials.value)
     
-    // Redirect to home page on success
-    router.push({ name: 'home' })
+    // Redirect to dashboard on success
+    router.push({ name: 'dashboard' })
   } catch (err) {
     // Error is already set in the auth store
     error.value = authStore.error || 'Login failed. Please try again.'
