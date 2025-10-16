@@ -66,9 +66,45 @@
       </div>
     </div>
 
+    <!-- Error Message -->
+    <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800">Error</h3>
+          <div class="mt-2 text-sm text-red-700">
+            {{ error }}
+          </div>
+        </div>
+        <div class="ml-auto pl-3">
+          <button @click="error = null" class="text-red-400 hover:text-red-600">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Users Table -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-      <div class="overflow-x-auto">
+      <!-- Loading State -->
+      <div v-if="loading" class="p-8 text-center">
+        <div class="inline-flex items-center space-x-2">
+          <svg class="animate-spin h-5 w-5 text-bloodsa-red" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-gray-600">Loading users...</span>
+        </div>
+      </div>
+      
+      <!-- Users Table Content -->
+      <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -152,7 +188,8 @@
                   </button>
                   <button
                     @click="toggleUserStatus(user)"
-                    class="p-1 rounded"
+                    :disabled="loading"
+                    class="p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     :class="user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
                     :title="user.isActive ? 'Deactivate User' : 'Activate User'"
                   >
@@ -165,7 +202,8 @@
                   </button>
                   <button
                     @click="deleteUser(user)"
-                    class="text-red-600 hover:text-red-900 p-1 rounded"
+                    :disabled="loading"
+                    class="text-red-600 hover:text-red-900 p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete User"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,9 +352,14 @@
               </button>
               <button
                 type="submit"
-                class="px-4 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors"
+                :disabled="loading"
+                class="px-4 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
-                Create User
+                <svg v-if="loading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>{{ loading ? 'Creating...' : 'Create User' }}</span>
               </button>
             </div>
           </form>
@@ -350,60 +393,10 @@ const newUser = ref({
   institution: ''
 })
 
-// Mock users data (replace with actual API call)
-const users = ref([
-  {
-    id: '1',
-    email: 'admin@bloodsa.org.za',
-    username: 'superadmin',
-    role: 'admin',
-    adminLevel: 'super_admin',
-    isActive: true,
-    profile: {
-      firstName: 'Super',
-      lastName: 'Admin',
-      institution: 'BLOODSA',
-      location: 'South Africa'
-    },
-    lastLoginAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    email: 'dr.smith@hospital.co.za',
-    username: 'dsmith',
-    role: 'haematologist',
-    adminLevel: 'none',
-    isActive: true,
-    profile: {
-      firstName: 'Dr. Sarah',
-      lastName: 'Smith',
-      institution: 'Groote Schuur Hospital',
-      location: 'Cape Town'
-    },
-    lastLoginAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '3',
-    email: 'dr.jones@clinic.co.za',
-    username: 'djones',
-    role: 'physician',
-    adminLevel: 'none',
-    isActive: false,
-    profile: {
-      firstName: 'Dr. Michael',
-      lastName: 'Jones',
-      institution: 'Tygerberg Hospital',
-      location: 'Cape Town'
-    },
-    lastLoginAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-])
+// Real users data from API
+const users = ref([])
+const loading = ref(false)
+const error = ref(null)
 
 // Computed properties
 const filteredUsers = computed(() => {
@@ -495,53 +488,61 @@ const editUser = (user: any) => {
 
 const toggleUserStatus = async (user: any) => {
   try {
+    loading.value = true
     if (user.isActive) {
       await usersStore.deactivateUser(user.id)
     } else {
       await usersStore.activateUser(user.id)
     }
+    // Update local state
     user.isActive = !user.isActive
-  } catch (error) {
-    console.error('Failed to toggle user status:', error)
+    // Refresh users list to get updated data
+    await loadUsers()
+  } catch (err) {
+    console.error('Failed to toggle user status:', err)
+    error.value = err instanceof Error ? err.message : 'Failed to update user status'
+  } finally {
+    loading.value = false
   }
 }
 
 const deleteUser = async (user: any) => {
   if (confirm(`Are you sure you want to delete ${user.profile.firstName} ${user.profile.lastName}?`)) {
     try {
+      loading.value = true
       await usersStore.deleteUser(user.id)
+      // Remove from local state
       const index = users.value.findIndex(u => u.id === user.id)
       if (index > -1) {
         users.value.splice(index, 1)
       }
-    } catch (error) {
-      console.error('Failed to delete user:', error)
+    } catch (err) {
+      console.error('Failed to delete user:', err)
+      error.value = err instanceof Error ? err.message : 'Failed to delete user'
+    } finally {
+      loading.value = false
     }
   }
 }
 
 const createUser = async () => {
   try {
-    // TODO: Implement actual user creation API call
-    const newUserData = {
-      id: Date.now().toString(),
+    loading.value = true
+    const userData = {
       email: newUser.value.email,
       username: newUser.value.email.split('@')[0],
       role: newUser.value.role,
-      adminLevel: 'none',
-      isActive: true,
       profile: {
         firstName: newUser.value.firstName,
         lastName: newUser.value.lastName,
         institution: newUser.value.institution,
         location: 'South Africa'
-      },
-      lastLoginAt: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      }
     }
     
-    users.value.push(newUserData)
+    const createdUser = await usersStore.createUser(userData)
+    // Add to local state
+    users.value.push(createdUser)
     showCreateModal.value = false
     
     // Reset form
@@ -552,8 +553,11 @@ const createUser = async () => {
       role: '',
       institution: ''
     }
-  } catch (error) {
-    console.error('Failed to create user:', error)
+  } catch (err) {
+    console.error('Failed to create user:', err)
+    error.value = err instanceof Error ? err.message : 'Failed to create user'
+  } finally {
+    loading.value = false
   }
 }
 
@@ -573,8 +577,22 @@ const goToPage = (page: number) => {
   currentPage.value = page
 }
 
+// Load users from API
+const loadUsers = async () => {
+  try {
+    loading.value = true
+    error.value = null
+    const usersData = await usersStore.fetchUsers()
+    users.value = usersData.users || []
+  } catch (err) {
+    console.error('Failed to load users:', err)
+    error.value = err instanceof Error ? err.message : 'Failed to load users'
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
-  // TODO: Load users from API
-  console.log('Loading users...')
+  loadUsers()
 })
 </script>
