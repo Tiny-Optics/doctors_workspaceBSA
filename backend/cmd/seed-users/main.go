@@ -208,16 +208,16 @@ func main() {
 
 	// Insert users into database
 	collection := db.Collection("users")
-	
+
 	fmt.Println("Adding sample users to the database...")
-	
+
 	for i, user := range sampleUsers {
 		// Check if user already exists
 		var existingUser models.User
 		err := collection.FindOne(ctx, map[string]interface{}{
 			"email": user.Email,
 		}).Decode(&existingUser)
-		
+
 		if err == nil {
 			fmt.Printf("User %d: %s already exists, skipping...\n", i+1, user.Email)
 			continue
@@ -230,7 +230,7 @@ func main() {
 			continue
 		}
 
-		fmt.Printf("User %d: %s (%s) added successfully with ID: %v\n", 
+		fmt.Printf("User %d: %s (%s) added successfully with ID: %v\n",
 			i+1, user.Email, user.Role, result.InsertedID)
 	}
 
@@ -244,7 +244,7 @@ func main() {
 		if !user.IsActive {
 			status = "Inactive"
 		}
-		fmt.Printf("- %s %s (%s) - %s - %s\n", 
+		fmt.Printf("- %s %s (%s) - %s - %s\n",
 			user.Profile.FirstName, user.Profile.LastName, user.Role, user.Profile.Institution, status)
 	}
 }

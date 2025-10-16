@@ -366,21 +366,87 @@
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <!-- Warning Icon -->
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          
+          <!-- Modal Content -->
+          <div class="text-center">
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Delete User</h3>
+            <div class="mt-2 px-7 py-3">
+              <p class="text-sm text-gray-500 mb-4">
+                Are you sure you want to delete this user? This action cannot be undone.
+              </p>
+              
+              <!-- User Info -->
+              <div v-if="userToDelete" class="bg-gray-50 rounded-lg p-4 mb-4">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 bg-bloodsa-red rounded-full flex items-center justify-center text-white font-semibold">
+                    {{ getUserInitials(userToDelete) }}
+                  </div>
+                  <div class="text-left">
+                    <p class="text-sm font-medium text-gray-900">
+                      {{ userToDelete.profile.firstName }} {{ userToDelete.profile.lastName }}
+                    </p>
+                    <p class="text-sm text-gray-500">{{ userToDelete.email }}</p>
+                    <p class="text-xs text-gray-400">{{ getRoleDisplayName(userToDelete.role) }} • {{ userToDelete.profile.institution }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex justify-center space-x-3 mt-6">
+              <button
+                @click="cancelDelete"
+                :disabled="loading"
+                class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                @click="confirmDelete"
+                :disabled="loading"
+                class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <svg v-if="loading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>{{ loading ? 'Deleting...' : 'Delete User' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUsersStore } from '@/stores/users'
-import { getUserRoleDisplayName } from '@/types/user'
+import { getUserRoleDisplayName, type User } from '@/types/user'
+import { useToast } from '@/composables/useToast'
 
 const usersStore = useUsersStore()
+const toast = useToast()
 
 // Reactive data
 const searchQuery = ref('')
 const roleFilter = ref('')
 const statusFilter = ref('')
 const showCreateModal = ref(false)
+const showDeleteModal = ref(false)
+const userToDelete = ref<User | null>(null)
 const currentPage = ref(1)
 const itemsPerPage = 10
 
@@ -394,9 +460,9 @@ const newUser = ref({
 })
 
 // Real users data from API
-const users = ref([])
+const users = ref<User[]>([])
 const loading = ref(false)
-const error = ref(null)
+const error = ref<string | null>(null)
 
 // Computed properties
 const filteredUsers = computed(() => {
@@ -487,6 +553,9 @@ const editUser = (user: any) => {
 }
 
 const toggleUserStatus = async (user: any) => {
+  const userName = `${user.profile.firstName} ${user.profile.lastName}`
+  const action = user.isActive ? 'deactivated' : 'activated'
+  
   try {
     loading.value = true
     if (user.isActive) {
@@ -498,51 +567,76 @@ const toggleUserStatus = async (user: any) => {
     user.isActive = !user.isActive
     // Refresh users list to get updated data
     await loadUsers()
+    // Show success toast
+    toast.success(`${userName} has been ${action}`)
   } catch (err) {
     console.error('Failed to toggle user status:', err)
     error.value = err instanceof Error ? err.message : 'Failed to update user status'
+    toast.error(`Failed to ${user.isActive ? 'deactivate' : 'activate'} ${userName}. Please try again.`)
   } finally {
     loading.value = false
   }
 }
 
-const deleteUser = async (user: any) => {
-  if (confirm(`Are you sure you want to delete ${user.profile.firstName} ${user.profile.lastName}?`)) {
-    try {
-      loading.value = true
-      await usersStore.deleteUser(user.id)
-      // Remove from local state
-      const index = users.value.findIndex(u => u.id === user.id)
-      if (index > -1) {
-        users.value.splice(index, 1)
-      }
-    } catch (err) {
-      console.error('Failed to delete user:', err)
-      error.value = err instanceof Error ? err.message : 'Failed to delete user'
-    } finally {
-      loading.value = false
+const deleteUser = (user: any) => {
+  userToDelete.value = user
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!userToDelete.value) return
+  
+  const userName = `${userToDelete.value.profile.firstName} ${userToDelete.value.profile.lastName}`
+  const userId = userToDelete.value.id
+  
+  try {
+    loading.value = true
+    await usersStore.deleteUser(userId)
+    // Remove from local state
+    const index = users.value.findIndex(u => u.id === userId)
+    if (index > -1) {
+      users.value.splice(index, 1)
     }
+    // Close modal
+    showDeleteModal.value = false
+    userToDelete.value = null
+    // Show success toast
+    toast.success(`${userName} has been successfully deleted`)
+  } catch (err) {
+    console.error('Failed to delete user:', err)
+    error.value = err instanceof Error ? err.message : 'Failed to delete user'
+    toast.error(`Failed to delete ${userName}. Please try again.`)
+  } finally {
+    loading.value = false
   }
 }
 
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  userToDelete.value = null
+}
+
 const createUser = async () => {
+  const userName = `${newUser.value.firstName} ${newUser.value.lastName}`
+  
   try {
     loading.value = true
     const userData = {
+      username: newUser.value.email.split('@')[0] || newUser.value.email,
       email: newUser.value.email,
-      username: newUser.value.email.split('@')[0],
-      role: newUser.value.role,
-      profile: {
-        firstName: newUser.value.firstName,
-        lastName: newUser.value.lastName,
-        institution: newUser.value.institution,
-        location: 'South Africa'
-      }
+      password: 'Password123!', // Default password
+      role: newUser.value.role as any,
+      firstName: newUser.value.firstName,
+      lastName: newUser.value.lastName,
+      institution: newUser.value.institution,
+      location: 'South Africa'
     }
     
     const createdUser = await usersStore.createUser(userData)
     // Add to local state
-    users.value.push(createdUser)
+    if (createdUser) {
+      users.value.push(createdUser)
+    }
     showCreateModal.value = false
     
     // Reset form
@@ -553,9 +647,13 @@ const createUser = async () => {
       role: '',
       institution: ''
     }
+    
+    // Show success toast
+    toast.success(`${userName} has been successfully created`)
   } catch (err) {
     console.error('Failed to create user:', err)
     error.value = err instanceof Error ? err.message : 'Failed to create user'
+    toast.error(`Failed to create ${userName}. Please try again.`)
   } finally {
     loading.value = false
   }

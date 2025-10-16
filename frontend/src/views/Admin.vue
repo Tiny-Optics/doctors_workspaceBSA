@@ -108,6 +108,9 @@
         <router-view />
       </main>
     </div>
+    
+    <!-- Toast Notifications -->
+    <ToastNotification />
   </div>
 </template>
 
@@ -116,6 +119,7 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AdminSidebar from '@/components/AdminSidebar.vue'
+import ToastNotification from '@/components/ToastNotification.vue'
 
 const route = useRoute()
 const router = useRouter()
