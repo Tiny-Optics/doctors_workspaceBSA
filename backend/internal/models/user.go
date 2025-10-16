@@ -37,13 +37,12 @@ type User struct {
 
 // UserProfile contains extended profile information for a user
 type UserProfile struct {
-	FirstName          string `bson:"first_name" json:"firstName"`
-	LastName           string `bson:"last_name" json:"lastName"`
-	Institution        string `bson:"institution" json:"institution"`
-	Specialty          string `bson:"specialty,omitempty" json:"specialty,omitempty"`
-	Location           string `bson:"location" json:"location"`
-	RegistrationNumber string `bson:"registration_number,omitempty" json:"registrationNumber,omitempty"`
-	PhoneNumber        string `bson:"phone_number,omitempty" json:"phoneNumber,omitempty"`
+	FirstName          string              `bson:"first_name" json:"firstName"`
+	LastName           string              `bson:"last_name" json:"lastName"`
+	InstitutionID      *primitive.ObjectID `bson:"institution_id,omitempty" json:"institutionId,omitempty"`
+	Specialty          string              `bson:"specialty,omitempty" json:"specialty,omitempty"`
+	RegistrationNumber string              `bson:"registration_number,omitempty" json:"registrationNumber,omitempty"`
+	PhoneNumber        string              `bson:"phone_number,omitempty" json:"phoneNumber,omitempty"`
 }
 
 // CreateUserRequest represents the request to create a new user
@@ -55,9 +54,8 @@ type CreateUserRequest struct {
 	AdminLevel         AdminLevel `json:"adminLevel,omitempty"`
 	FirstName          string     `json:"firstName" binding:"required"`
 	LastName           string     `json:"lastName" binding:"required"`
-	Institution        string     `json:"institution" binding:"required"`
+	InstitutionID      string     `json:"institutionId" binding:"required"`
 	Specialty          string     `json:"specialty,omitempty"`
-	Location           string     `json:"location" binding:"required"`
 	RegistrationNumber string     `json:"registrationNumber,omitempty"`
 	PhoneNumber        string     `json:"phoneNumber,omitempty"`
 }
@@ -66,9 +64,8 @@ type CreateUserRequest struct {
 type UpdateUserRequest struct {
 	FirstName          *string     `json:"firstName,omitempty"`
 	LastName           *string     `json:"lastName,omitempty"`
-	Institution        *string     `json:"institution,omitempty"`
+	InstitutionID      *string     `json:"institutionId,omitempty"`
 	Specialty          *string     `json:"specialty,omitempty"`
-	Location           *string     `json:"location,omitempty"`
 	RegistrationNumber *string     `json:"registrationNumber,omitempty"`
 	PhoneNumber        *string     `json:"phoneNumber,omitempty"`
 	Role               *UserRole   `json:"role,omitempty"`
@@ -149,11 +146,13 @@ func (req *CreateUserRequest) Validate() error {
 	if len(req.LastName) < 2 || len(req.LastName) > 100 {
 		return ErrProfileFieldTooShort
 	}
-	if len(req.Institution) < 2 || len(req.Institution) > 100 {
-		return ErrProfileFieldTooShort
+
+	// Validate institution ID
+	if req.InstitutionID == "" {
+		return errors.New("institution ID is required")
 	}
-	if len(req.Location) < 2 || len(req.Location) > 100 {
-		return ErrProfileFieldTooShort
+	if _, err := primitive.ObjectIDFromHex(req.InstitutionID); err != nil {
+		return errors.New("invalid institution ID format")
 	}
 
 	return nil
