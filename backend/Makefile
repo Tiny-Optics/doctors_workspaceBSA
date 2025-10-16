@@ -44,6 +44,11 @@ seed:
 	@echo "Seeding database..."
 	@go run cmd/seed/main.go
 
+# Seed the database with sample users
+seed-users:
+	@echo "Adding sample users to database..."
+	@go run cmd/seed-users/main.go
+
 # Clean the binary
 clean:
 	@echo "Cleaning..."
@@ -66,4 +71,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest seed
+.PHONY: all build run test clean watch docker-run docker-down itest seed seed-users
