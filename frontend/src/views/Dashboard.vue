@@ -20,7 +20,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
               <div class="flex items-center space-x-2">
                 <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span class="text-lg text-gray-600">{{ user?.profile.institution }}</span>
+                <span class="text-lg text-gray-600">{{ getInstitutionName(user?.profile.institutionId) }}</span>
               </div>
               <div class="flex items-center space-x-2">
                 <span class="px-3 py-1 bg-bloodsa-red bg-opacity-10 text-bloodsa-red rounded-full text-sm font-medium">
@@ -301,9 +301,11 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useInstitutionsStore } from '@/stores/institutions'
 import { getUserRoleDisplayName } from '@/types/user'
 
 const authStore = useAuthStore()
+const institutionsStore = useInstitutionsStore()
 
 const user = computed(() => authStore.user)
 
@@ -344,6 +346,12 @@ const getAdminLevelDisplayName = (adminLevel?: string) => {
   }
 }
 
+const getInstitutionName = (institutionId?: string): string => {
+  if (!institutionId) return 'No Institution'
+  const institution = institutionsStore.institutions.find(i => i.id === institutionId)
+  return institution ? institution.name : 'Unknown Institution'
+}
+
 const formatLastLogin = (lastLogin?: string) => {
   if (!lastLogin) return 'First login'
   const date = new Date(lastLogin)
@@ -376,7 +384,9 @@ const loadSystemStats = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Load institutions for institution name lookup
+  await institutionsStore.fetchInstitutions({ isActive: true, limit: 1000 })
   loadSystemStats()
 })
 </script>
