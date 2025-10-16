@@ -1,11 +1,11 @@
 <template>
-  <div class="fixed top-4 right-4 z-50 space-y-2">
+  <div class="fixed top-4 right-4 left-4 sm:left-auto z-50 space-y-2 sm:max-w-md">
     <transition-group name="toast">
       <div
         v-for="toast in toasts"
         :key="toast.id"
         :class="[
-          'max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden',
+          'w-full sm:w-auto sm:min-w-[300px] sm:max-w-md bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden',
           'transition-all duration-300 ease-in-out'
         ]"
       >
@@ -79,8 +79,8 @@
             </div>
             
             <!-- Message -->
-            <div class="ml-3 w-0 flex-1 pt-0.5">
-              <p class="text-sm font-medium text-gray-900">
+            <div class="ml-3 flex-1 pt-0.5">
+              <p class="text-sm font-medium text-gray-900 break-words">
                 {{ toast.message }}
               </p>
             </div>
