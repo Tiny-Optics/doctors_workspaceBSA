@@ -180,7 +180,7 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ user.profile.institution }}
+                {{ getInstitutionDisplay(user.profile.institutionId) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span 
@@ -499,25 +499,23 @@
                   Professional Information
                 </h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Institution <span class="text-red-500">*</span></label>
-                    <input
-                      v-model="newUser.institution"
-                      type="text"
+                    <select
+                      v-model="newUser.institutionId"
                       required
-                      placeholder="e.g., University of Cape Town"
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Location <span class="text-red-500">*</span></label>
-                    <input
-                      v-model="newUser.location"
-                      type="text"
-                      required
-                      placeholder="e.g., Cape Town, South Africa"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
-                    />
+                    >
+                      <option value="">Select Institution</option>
+                      <option 
+                        v-for="institution in institutionsStore.institutions" 
+                        :key="institution.id" 
+                        :value="institution.id"
+                      >
+                        {{ institution.name }} ({{ institution.shortName }}) - {{ institution.city }}
+                      </option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Select the user's affiliated institution</p>
                   </div>
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
@@ -598,7 +596,7 @@
                       {{ userToDelete.profile.firstName }} {{ userToDelete.profile.lastName }}
                     </p>
                     <p class="text-sm text-gray-500">{{ userToDelete.email }}</p>
-                    <p class="text-xs text-gray-400">{{ getRoleDisplayName(userToDelete.role) }} • {{ userToDelete.profile.institution }}</p>
+                    <p class="text-xs text-gray-400">{{ getRoleDisplayName(userToDelete.role) }} • {{ getInstitutionName(userToDelete.profile.institutionId) }}</p>
                   </div>
                 </div>
               </div>
@@ -706,11 +704,11 @@
             <div class="bg-gray-50 rounded-lg p-4 space-y-3">
               <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-600">Institution</span>
-                <span class="text-sm text-gray-900">{{ userToView.profile.institution }}</span>
+                <span class="text-sm text-gray-900">{{ getInstitutionName(userToView.profile.institutionId) }}</span>
               </div>
-              <div v-if="userToView.profile.location" class="flex items-center justify-between">
+              <div v-if="userToView.profile.institutionId" class="flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-600">Location</span>
-                <span class="text-sm text-gray-900">{{ userToView.profile.location }}</span>
+                <span class="text-sm text-gray-900">{{ getInstitutionLocation(userToView.profile.institutionId) }}</span>
               </div>
               <div v-if="userToView.profile.specialty" class="flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-600">Specialty</span>
@@ -805,10 +803,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useUsersStore } from '@/stores/users'
+import { useInstitutionsStore } from '@/stores/institutions'
 import { getUserRoleDisplayName, type User } from '@/types/user'
+import type { Institution } from '@/types/institution'
 import { useToast } from '@/composables/useToast'
 
 const usersStore = useUsersStore()
+const institutionsStore = useInstitutionsStore()
 const toast = useToast()
 
 // Reactive data
@@ -833,9 +834,8 @@ const newUser = ref({
   lastName: '',
   role: '',
   adminLevel: '',
-  institution: '',
+  institutionId: '',
   specialty: '',
-  location: '',
   registrationNumber: '',
   phoneNumber: ''
 })
@@ -851,6 +851,32 @@ const totalPages = computed(() => Math.ceil(totalUsers.value / itemsPerPage))
 
 // For server-side pagination, we display the users directly (search is handled by backend)
 const displayUsers = computed(() => users.value)
+
+// Helper to get institution name by ID
+const getInstitutionName = (institutionId?: string): string => {
+  if (!institutionId) return 'N/A'
+  const institution = institutionsStore.institutions.find(i => i.id === institutionId)
+  return institution ? `${institution.name}` : 'Unknown Institution'
+}
+
+// Helper to get institution display with location
+const getInstitutionDisplay = (institutionId?: string): string => {
+  if (!institutionId) return 'N/A'
+  const institution = institutionsStore.institutions.find(i => i.id === institutionId)
+  if (!institution) return 'Unknown Institution'
+  return `${institution.shortName || institution.name} - ${institution.city}`
+}
+
+// Helper to get institution location
+const getInstitutionLocation = (institutionId?: string): string => {
+  if (!institutionId) return 'N/A'
+  const institution = institutionsStore.institutions.find(i => i.id === institutionId)
+  if (!institution) return 'Unknown'
+  let location = institution.city
+  if (institution.province) location += ', ' + institution.province
+  if (institution.country) location += ', ' + institution.country
+  return location
+}
 
 const visiblePages = computed(() => {
   const pages = []
@@ -1032,9 +1058,8 @@ const createUser = async () => {
       adminLevel: newUser.value.role === 'admin' ? newUser.value.adminLevel as any : undefined,
       firstName: newUser.value.firstName,
       lastName: newUser.value.lastName,
-      institution: newUser.value.institution,
+      institutionId: newUser.value.institutionId,
       specialty: newUser.value.specialty || undefined,
-      location: newUser.value.location,
       registrationNumber: newUser.value.registrationNumber || undefined,
       phoneNumber: newUser.value.phoneNumber || undefined
     }
@@ -1055,9 +1080,8 @@ const createUser = async () => {
       lastName: '',
       role: '',
       adminLevel: '',
-      institution: '',
+      institutionId: '',
       specialty: '',
-      location: '',
       registrationNumber: '',
       phoneNumber: ''
     }
@@ -1154,7 +1178,10 @@ const loadUsers = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Load institutions first for dropdowns
+  await institutionsStore.fetchInstitutions({ isActive: true, limit: 1000 })
+  // Then load users
   loadUsers()
 })
 </script>

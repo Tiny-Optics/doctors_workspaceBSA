@@ -54,6 +54,16 @@ seed-30-users:
 	@echo "Adding 30 new users to database..."
 	@go run cmd/seed-30-users/main.go
 
+# Seed the database with institutions
+seed-institutions:
+	@echo "Seeding institutions..."
+	@go run cmd/seed-institutions/main.go
+
+# Migrate existing users to use institution IDs
+migrate-institutions:
+	@echo "Migrating users to institution IDs..."
+	@go run cmd/migrate-institutions/main.go
+
 # Clean the binary
 clean:
 	@echo "Cleaning..."
@@ -76,4 +86,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest seed seed-users seed-30-users
+.PHONY: all build run test clean watch docker-run docker-down itest seed seed-users seed-30-users seed-institutions migrate-institutions

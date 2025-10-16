@@ -15,9 +15,8 @@ export interface User {
 export interface UserProfile {
   firstName: string
   lastName: string
-  institution: string
+  institutionId?: string
   specialty?: string
-  location: string
   registrationNumber?: string
   phoneNumber?: string
 }
@@ -45,9 +44,8 @@ export interface CreateUserRequest {
   adminLevel?: AdminLevel
   firstName: string
   lastName: string
-  institution: string
+  institutionId: string
   specialty?: string
-  location: string
   registrationNumber?: string
   phoneNumber?: string
 }
@@ -55,9 +53,8 @@ export interface CreateUserRequest {
 export interface UpdateUserRequest {
   firstName?: string
   lastName?: string
-  institution?: string
+  institutionId?: string
   specialty?: string
-  location?: string
   registrationNumber?: string
   phoneNumber?: string
   role?: UserRole

@@ -77,6 +77,12 @@ func (s *UserService) CreateUser(ctx context.Context, req *models.CreateUserRequ
 		return nil, err
 	}
 
+	// Parse institution ID
+	institutionID, err := primitive.ObjectIDFromHex(req.InstitutionID)
+	if err != nil {
+		return nil, errors.New("invalid institution ID format")
+	}
+
 	// Create user
 	user := &models.User{
 		Username:     req.Username,
@@ -88,9 +94,8 @@ func (s *UserService) CreateUser(ctx context.Context, req *models.CreateUserRequ
 		Profile: models.UserProfile{
 			FirstName:          req.FirstName,
 			LastName:           req.LastName,
-			Institution:        req.Institution,
+			InstitutionID:      &institutionID,
 			Specialty:          req.Specialty,
-			Location:           req.Location,
 			RegistrationNumber: req.RegistrationNumber,
 			PhoneNumber:        req.PhoneNumber,
 		},
@@ -148,17 +153,17 @@ func (s *UserService) UpdateUser(ctx context.Context, userID primitive.ObjectID,
 		update["profile.last_name"] = *req.LastName
 		details["last_name"] = *req.LastName
 	}
-	if req.Institution != nil {
-		update["profile.institution"] = *req.Institution
-		details["institution"] = *req.Institution
+	if req.InstitutionID != nil {
+		institutionID, err := primitive.ObjectIDFromHex(*req.InstitutionID)
+		if err != nil {
+			return nil, errors.New("invalid institution ID format")
+		}
+		update["profile.institution_id"] = institutionID
+		details["institution_id"] = *req.InstitutionID
 	}
 	if req.Specialty != nil {
 		update["profile.specialty"] = *req.Specialty
 		details["specialty"] = *req.Specialty
-	}
-	if req.Location != nil {
-		update["profile.location"] = *req.Location
-		details["location"] = *req.Location
 	}
 	if req.RegistrationNumber != nil {
 		update["profile.registration_number"] = *req.RegistrationNumber
@@ -350,13 +355,13 @@ func (s *UserService) ListUsers(ctx context.Context, role *models.UserRole, isAc
 
 	// Add search filter if search query is provided
 	if search != "" {
-		// Search across multiple fields: firstName, lastName, email, role, institution
+		// Search across multiple fields: firstName, lastName, email, role
+		// Note: Institution search requires a join/lookup with institutions collection
 		filter["$or"] = []bson.M{
 			{"profile.first_name": bson.M{"$regex": search, "$options": "i"}},
 			{"profile.last_name": bson.M{"$regex": search, "$options": "i"}},
 			{"email": bson.M{"$regex": search, "$options": "i"}},
 			{"role": bson.M{"$regex": search, "$options": "i"}},
-			{"profile.institution": bson.M{"$regex": search, "$options": "i"}},
 		}
 	}
 

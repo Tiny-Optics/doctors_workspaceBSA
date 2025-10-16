@@ -34,14 +34,17 @@ func (s *Server) RegisterRoutes() http.Handler {
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
+	institutionRepo := repository.NewInstitutionRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
+	institutionService := service.NewInstitutionService(institutionRepo, auditRepo)
 	userService := service.NewUserService(userRepo, auditRepo, authService)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
+	institutionHandler := handlers.NewInstitutionHandler(institutionService)
 
 	// API routes group
 	api := r.Group("/api")
@@ -73,6 +76,19 @@ func (s *Server) RegisterRoutes() http.Handler {
 			users.POST("/:id/activate", middleware.RequirePermission(models.PermManageUsers), userHandler.ActivateUser)
 			users.POST("/:id/deactivate", middleware.RequirePermission(models.PermManageUsers), userHandler.DeactivateUser)
 			users.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), userHandler.DeleteUser)
+		}
+
+		// Institution routes (all protected)
+		institutions := api.Group("/institutions")
+		institutions.Use(middleware.AuthMiddleware(authService))
+		{
+			institutions.GET("", institutionHandler.ListInstitutions)
+			institutions.GET("/:id", institutionHandler.GetInstitution)
+			institutions.POST("", middleware.RequirePermission(models.PermManageUsers), institutionHandler.CreateInstitution)
+			institutions.PUT("/:id", middleware.RequirePermission(models.PermManageUsers), institutionHandler.UpdateInstitution)
+			institutions.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), institutionHandler.DeleteInstitution)
+			institutions.POST("/:id/activate", middleware.RequirePermission(models.PermManageUsers), institutionHandler.ActivateInstitution)
+			institutions.POST("/:id/deactivate", middleware.RequirePermission(models.PermManageUsers), institutionHandler.DeactivateInstitution)
 		}
 	}
 
