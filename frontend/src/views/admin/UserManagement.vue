@@ -92,19 +92,24 @@
 
     <!-- Users Table -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-      <!-- Loading State -->
-      <div v-if="loading" class="p-8 text-center">
-        <div class="inline-flex items-center space-x-2">
-          <svg class="animate-spin h-5 w-5 text-bloodsa-red" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="text-gray-600">Loading users...</span>
-        </div>
-      </div>
-      
-      <!-- Users Table Content -->
-      <div v-else class="overflow-x-auto">
+      <!-- Users Table Content with Loading Overlay -->
+      <div class="overflow-x-auto relative min-h-[400px]">
+        <!-- Loading Overlay -->
+        <transition name="fade">
+          <div 
+            v-if="loading" 
+            class="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10 backdrop-blur-sm"
+          >
+            <div class="inline-flex items-center space-x-2">
+              <svg class="animate-spin h-5 w-5 text-bloodsa-red" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span class="text-gray-600">Loading...</span>
+            </div>
+          </div>
+        </transition>
+        
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -129,6 +134,29 @@
             </tr>
           </thead>
             <tbody class="bg-white divide-y divide-gray-200">
+              <!-- Empty State -->
+              <tr v-if="!loading && displayUsers.length === 0">
+                <td colspan="6" class="px-6 py-12 text-center">
+                  <div class="flex flex-col items-center justify-center space-y-3">
+                    <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <div class="text-gray-500">
+                      <p class="text-lg font-medium">No users found</p>
+                      <p class="text-sm mt-1">
+                        <span v-if="searchQuery || roleFilter || statusFilter">
+                          Try adjusting your search or filters
+                        </span>
+                        <span v-else>
+                          No users exist in the system yet
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              
+              <!-- User Rows -->
               <tr v-for="user in displayUsers" :key="user.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
@@ -494,23 +522,8 @@ const error = ref<string | null>(null)
 // Computed properties for server-side pagination
 const totalPages = computed(() => Math.ceil(totalUsers.value / itemsPerPage))
 
-// For server-side pagination, we display the users with client-side search filtering
-const displayUsers = computed(() => {
-  let filtered = users.value
-
-  // Apply client-side search filter (since backend doesn't support search yet)
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(user => 
-      user.profile.firstName.toLowerCase().includes(query) ||
-      user.profile.lastName.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
-      user.role.toLowerCase().includes(query)
-    )
-  }
-
-  return filtered
-})
+// For server-side pagination, we display the users directly (search is handled by backend)
+const displayUsers = computed(() => users.value)
 
 const visiblePages = computed(() => {
   const pages = []
@@ -541,11 +554,19 @@ watch([roleFilter, statusFilter], () => {
   loadUsers() // Reload with new filters
 })
 
-// Watch for search query changes (client-side filtering only)
-// Note: Search is handled client-side since backend doesn't support search yet
+// Watch for search query changes with debouncing (backend search)
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 watch(searchQuery, () => {
-  // No need to reload from server, just filter client-side
-  // The displayUsers computed property will handle the filtering
+  // Clear previous timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  
+  // Debounce search - wait 300ms after user stops typing
+  searchTimeout = setTimeout(() => {
+    resetPagination()
+    loadUsers() // Reload with search query from backend
+  }, 300)
 })
 
 const getRoleDisplayName = (role: string) => {
@@ -745,12 +766,13 @@ const loadUsers = async () => {
     // Calculate skip value for server-side pagination
     const skip = (currentPage.value - 1) * itemsPerPage
     
-    // Fetch users with pagination parameters
+    // Fetch users with pagination and search parameters
     await usersStore.fetchUsers({ 
       limit: itemsPerPage,
       skip: skip,
       role: roleFilter.value as any || undefined,
-      isActive: statusFilter.value === 'active' ? true : statusFilter.value === 'inactive' ? false : undefined
+      isActive: statusFilter.value === 'active' ? true : statusFilter.value === 'inactive' ? false : undefined,
+      search: searchQuery.value || undefined
     })
     
     console.log('Users loaded from store:', usersStore.users)
@@ -777,3 +799,13 @@ onMounted(() => {
   loadUsers()
 })
 </script>
+
+<style scoped>
+/* Fade transition for loading overlay */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>

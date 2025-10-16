@@ -337,8 +337,8 @@ func (s *UserService) GetUser(ctx context.Context, userID primitive.ObjectID) (*
 	return s.userRepo.FindByID(ctx, userID)
 }
 
-// ListUsers retrieves users with pagination and filtering
-func (s *UserService) ListUsers(ctx context.Context, role *models.UserRole, isActive *bool, limit, skip int64) ([]*models.User, int64, error) {
+// ListUsers retrieves users with pagination, filtering, and searching
+func (s *UserService) ListUsers(ctx context.Context, role *models.UserRole, isActive *bool, search string, limit, skip int64) ([]*models.User, int64, error) {
 	filter := bson.M{}
 
 	if role != nil {
@@ -346,6 +346,18 @@ func (s *UserService) ListUsers(ctx context.Context, role *models.UserRole, isAc
 	}
 	if isActive != nil {
 		filter["is_active"] = *isActive
+	}
+
+	// Add search filter if search query is provided
+	if search != "" {
+		// Search across multiple fields: firstName, lastName, email, role, institution
+		filter["$or"] = []bson.M{
+			{"profile.first_name": bson.M{"$regex": search, "$options": "i"}},
+			{"profile.last_name": bson.M{"$regex": search, "$options": "i"}},
+			{"email": bson.M{"$regex": search, "$options": "i"}},
+			{"role": bson.M{"$regex": search, "$options": "i"}},
+			{"profile.institution": bson.M{"$regex": search, "$options": "i"}},
+		}
 	}
 
 	users, err := s.userRepo.List(ctx, filter, limit, skip)

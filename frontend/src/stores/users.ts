@@ -26,6 +26,7 @@ export const useUsersStore = defineStore('users', () => {
   async function fetchUsers(options?: {
     role?: UserRole
     isActive?: boolean
+    search?: string
     limit?: number
     skip?: number
   }): Promise<void> {
@@ -36,6 +37,7 @@ export const useUsersStore = defineStore('users', () => {
       const params = new URLSearchParams()
       if (options?.role) params.append('role', options.role)
       if (options?.isActive !== undefined) params.append('is_active', String(options.isActive))
+      if (options?.search) params.append('search', options.search)
       if (options?.limit) params.append('limit', String(options.limit))
       if (options?.skip) params.append('skip', String(options.skip))
 

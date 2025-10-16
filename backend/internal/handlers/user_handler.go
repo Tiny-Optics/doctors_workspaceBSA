@@ -286,11 +286,12 @@ func (h *UserHandler) ActivateUser(c *gin.Context) {
 
 // ListUsers godoc
 // @Summary List users
-// @Description Get a list of users with optional filtering and pagination
+// @Description Get a list of users with optional filtering, searching and pagination
 // @Tags users
 // @Produce json
 // @Param role query string false "Filter by role"
 // @Param is_active query bool false "Filter by active status"
+// @Param search query string false "Search by name, email, role, or institution"
 // @Param limit query int false "Limit number of results" default(20)
 // @Param skip query int false "Skip number of results" default(0)
 // @Success 200 {object} map[string]interface{}
@@ -314,6 +315,9 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		isActive = &active
 	}
 
+	// Get search query parameter
+	search := c.Query("search")
+
 	limit := int64(20)
 	if limitParam := c.Query("limit"); limitParam != "" {
 		if l, err := strconv.ParseInt(limitParam, 10, 64); err == nil && l > 0 {
@@ -328,7 +332,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		}
 	}
 
-	users, count, err := h.userService.ListUsers(c.Request.Context(), role, isActive, limit, skip)
+	users, count, err := h.userService.ListUsers(c.Request.Context(), role, isActive, search, limit, skip)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
