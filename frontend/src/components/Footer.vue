@@ -44,7 +44,7 @@
       <div class="mt-8 pt-8 border-t border-gray-200">
         <div class="flex flex-col md:flex-row justify-between items-center">
           <p class="text-gray-500 text-sm">
-            © {{ currentYear }} BLOODSA. All rights reserved.
+            © {{ currentYear }} BLOODSA. All rights reserved. Website developed by <a href="https://tinyoptics.co.za/" target="_blank" class="text-bloodsa-red hover:text-bloodsa-light-red transition-colors duration-200">Tiny Optics</a>.
           </p>
           <div class="flex space-x-6 mt-4 md:mt-0">
             <a href="#" class="text-gray-400 hover:text-bloodsa-red transition-colors duration-200">
