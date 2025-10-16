@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:latest
+    container_name: bloodsa_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${BLUEPRINT_DB_USERNAME:-melkey}
+      MONGO_INITDB_ROOT_PASSWORD: ${BLUEPRINT_DB_ROOT_PASSWORD:-password1234}
+    ports:
+      - "${BLUEPRINT_DB_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - bloodsa_network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (Go with Air hot-reloading)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: bloodsa_backend
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      - PORT=${PORT:-8080}
+      - APP_ENV=${APP_ENV:-local}
+      - BLUEPRINT_DB_HOST=mongodb
+      - BLUEPRINT_DB_PORT=27017
+      - BLUEPRINT_DB_USERNAME=${BLUEPRINT_DB_USERNAME:-melkey}
+      - BLUEPRINT_DB_ROOT_PASSWORD=${BLUEPRINT_DB_ROOT_PASSWORD:-password1234}
+    volumes:
+      - ./backend:/app
+      - /app/tmp
+      - go_modules:/go/pkg/mod
+    networks:
+      - bloodsa_network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    command: air
+
+  # Frontend (Vue.js with Vite hot-reloading)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: bloodsa_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8080
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - bloodsa_network
+    depends_on:
+      - backend
+    command: npm run dev
+
+networks:
+  bloodsa_network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local
+  go_modules:
+    driver: local
+
+
