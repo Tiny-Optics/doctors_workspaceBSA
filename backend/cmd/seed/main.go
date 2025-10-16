@@ -21,8 +21,10 @@ func main() {
 	// Get MongoDB connection details from environment
 	host := os.Getenv("BLUEPRINT_DB_HOST")
 	port := os.Getenv("BLUEPRINT_DB_PORT")
+	username := os.Getenv("BLUEPRINT_DB_USERNAME")
+	password := os.Getenv("BLUEPRINT_DB_ROOT_PASSWORD")
 	database := os.Getenv("BLUEPRINT_DB_DATABASE")
-
+	
 	if host == "" {
 		host = "localhost"
 	}
@@ -33,9 +35,17 @@ func main() {
 		database = "doctors_workspace"
 	}
 
+	// Build connection URI
+	var uri string
+	if username != "" && password != "" {
+		uri = fmt.Sprintf("mongodb://%s:%s@%s:%s", username, password, host, port)
+	} else {
+		uri = fmt.Sprintf("mongodb://%s:%s", host, port)
+	}
+
 	// Connect to MongoDB
 	ctx := context.Background()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s", host, port)))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatal("Failed to connect to MongoDB:", err)
 	}
