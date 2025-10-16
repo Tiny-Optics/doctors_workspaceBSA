@@ -340,80 +340,227 @@
 
     <!-- Create User Modal -->
     <div v-if="showCreateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Create New User</h3>
+      <div class="relative top-10 mx-auto p-6 border w-full max-w-3xl shadow-lg rounded-lg bg-white my-10">
+        <div>
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-900">Create New User</h3>
+            <button
+              @click="showCreateModal = false"
+              class="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
           <form @submit.prevent="createUser">
-            <div class="space-y-4">
+            <div class="space-y-6">
+              <!-- Account Information -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <input
-                  v-model="newUser.firstName"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
-                />
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Account Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="newUser.username"
+                      type="text"
+                      required
+                      placeholder="e.g., john.doe"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">3-50 characters, alphanumeric and underscores only</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="newUser.email"
+                      type="email"
+                      required
+                      placeholder="e.g., john.doe@hospital.com"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Password <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="newUser.password"
+                      type="password"
+                      required
+                      placeholder="Enter secure password"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Min 8 chars with uppercase, lowercase, number & special char</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="newUser.confirmPassword"
+                      type="password"
+                      required
+                      placeholder="Re-enter password"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                </div>
               </div>
+
+              <!-- Personal Information -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                <input
-                  v-model="newUser.lastName"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
-                />
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Personal Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="newUser.firstName"
+                      type="text"
+                      required
+                      placeholder="e.g., John"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="newUser.lastName"
+                      type="text"
+                      required
+                      placeholder="e.g., Doe"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input
+                      v-model="newUser.phoneNumber"
+                      type="tel"
+                      placeholder="e.g., +27 11 123 4567"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                </div>
               </div>
+
+              <!-- Role & Permissions -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  v-model="newUser.email"
-                  type="email"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
-                />
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  Role & Permissions
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Role <span class="text-red-500">*</span></label>
+                    <select
+                      v-model="newUser.role"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    >
+                      <option value="">Select Role</option>
+                      <option value="haematologist">Haematologist</option>
+                      <option value="physician">Physician</option>
+                      <option value="data_capturer">Data Capturer</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                  <div v-if="newUser.role === 'admin'">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Admin Level <span class="text-red-500">*</span></label>
+                    <select
+                      v-model="newUser.adminLevel"
+                      :required="newUser.role === 'admin'"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    >
+                      <option value="">Select Admin Level</option>
+                      <option value="user_manager">User Manager</option>
+                      <option value="super_admin">Super Admin</option>
+                    </select>
+                  </div>
+                </div>
               </div>
+
+              <!-- Professional Information -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
-                  v-model="newUser.role"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
-                >
-                  <option value="">Select Role</option>
-                  <option value="haematologist">Haematologist</option>
-                  <option value="physician">Physician</option>
-                  <option value="data_capturer">Data Capturer</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Institution</label>
-                <input
-                  v-model="newUser.institution"
-                  type="text"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
-                />
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Professional Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Institution <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="newUser.institution"
+                      type="text"
+                      required
+                      placeholder="e.g., University of Cape Town"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Location <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="newUser.location"
+                      type="text"
+                      required
+                      placeholder="e.g., Cape Town, South Africa"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
+                    <input
+                      v-model="newUser.specialty"
+                      type="text"
+                      placeholder="e.g., Haematology, Internal Medicine"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
+                    <input
+                      v-model="newUser.registrationNumber"
+                      type="text"
+                      placeholder="e.g., HPCSA123456"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">HPCSA or other professional registration number</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="flex justify-end space-x-3 mt-6">
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
               <button
                 type="button"
                 @click="showCreateModal = false"
-                class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                class="px-6 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 :disabled="loading"
-                class="px-4 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                class="px-6 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
                 <svg v-if="loading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>{{ loading ? 'Creating...' : 'Create User' }}</span>
+                <span>{{ loading ? 'Creating User...' : 'Create User' }}</span>
               </button>
             </div>
           </form>
@@ -678,11 +825,19 @@ const itemsPerPage = 10
 
 // New user form data
 const newUser = ref({
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
   firstName: '',
   lastName: '',
-  email: '',
   role: '',
-  institution: ''
+  adminLevel: '',
+  institution: '',
+  specialty: '',
+  location: '',
+  registrationNumber: '',
+  phoneNumber: ''
 })
 
 // Real users data from API
@@ -851,41 +1006,68 @@ const cancelDelete = () => {
 const createUser = async () => {
   const userName = `${newUser.value.firstName} ${newUser.value.lastName}`
   
+  // Validate password match
+  if (newUser.value.password !== newUser.value.confirmPassword) {
+    error.value = 'Passwords do not match'
+    toast.error('Passwords do not match. Please check and try again.')
+    return
+  }
+  
+  // Validate admin level for admin role
+  if (newUser.value.role === 'admin' && !newUser.value.adminLevel) {
+    error.value = 'Admin level is required for admin role'
+    toast.error('Please select an admin level for admin users.')
+    return
+  }
+  
   try {
     loading.value = true
+    error.value = null
+    
     const userData = {
-      username: newUser.value.email.split('@')[0] || newUser.value.email,
+      username: newUser.value.username,
       email: newUser.value.email,
-      password: 'Password123!', // Default password
+      password: newUser.value.password,
       role: newUser.value.role as any,
+      adminLevel: newUser.value.role === 'admin' ? newUser.value.adminLevel as any : undefined,
       firstName: newUser.value.firstName,
       lastName: newUser.value.lastName,
       institution: newUser.value.institution,
-      location: 'South Africa'
+      specialty: newUser.value.specialty || undefined,
+      location: newUser.value.location,
+      registrationNumber: newUser.value.registrationNumber || undefined,
+      phoneNumber: newUser.value.phoneNumber || undefined
     }
     
     const createdUser = await usersStore.createUser(userData)
-    // Add to local state
-    if (createdUser) {
-      users.value.push(createdUser)
-    }
+    // Refresh users list to include the new user
+    await loadUsers()
+    
     showCreateModal.value = false
     
     // Reset form
     newUser.value = {
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
       firstName: '',
       lastName: '',
-      email: '',
       role: '',
-      institution: ''
+      adminLevel: '',
+      institution: '',
+      specialty: '',
+      location: '',
+      registrationNumber: '',
+      phoneNumber: ''
     }
     
     // Show success toast
-    toast.success(`${userName} has been successfully created`)
+    toast.success(`${userName} has been successfully created with username: ${userData.username}`)
   } catch (err) {
     console.error('Failed to create user:', err)
     error.value = err instanceof Error ? err.message : 'Failed to create user'
-    toast.error(`Failed to create ${userName}. Please try again.`)
+    toast.error(`Failed to create ${userName}. ${err instanceof Error ? err.message : 'Please try again.'}`)
   } finally {
     loading.value = false
   }
