@@ -19,7 +19,7 @@
 
     <!-- Filters and Search -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Search -->
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
@@ -34,6 +34,24 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
+        </div>
+
+        <!-- Institution Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Institution</label>
+          <select
+            v-model="institutionFilter"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+          >
+            <option value="">All Institutions</option>
+            <option 
+              v-for="institution in institutionsStore.institutions" 
+              :key="institution.id" 
+              :value="institution.id"
+            >
+              {{ institution.shortName || institution.name }}
+            </option>
+          </select>
         </div>
 
         <!-- Role Filter -->
@@ -816,6 +834,7 @@ const toast = useToast()
 const searchQuery = ref('')
 const roleFilter = ref('')
 const statusFilter = ref('')
+const institutionFilter = ref('')
 const showCreateModal = ref(false)
 const showDeleteModal = ref(false)
 const showViewModal = ref(false)
@@ -849,8 +868,18 @@ const error = ref<string | null>(null)
 // Computed properties for server-side pagination
 const totalPages = computed(() => Math.ceil(totalUsers.value / itemsPerPage))
 
-// For server-side pagination, we display the users directly (search is handled by backend)
-const displayUsers = computed(() => users.value)
+// For server-side pagination, we display the users with client-side institution filtering
+// (Backend doesn't support institution filtering yet)
+const displayUsers = computed(() => {
+  let filtered = users.value
+
+  // Apply client-side institution filter
+  if (institutionFilter.value) {
+    filtered = filtered.filter(user => user.profile.institutionId === institutionFilter.value)
+  }
+
+  return filtered
+})
 
 // Helper to get institution name by ID
 const getInstitutionName = (institutionId?: string): string => {
@@ -905,6 +934,12 @@ const resetPagination = () => {
 watch([roleFilter, statusFilter], () => {
   resetPagination()
   loadUsers() // Reload with new filters
+})
+
+// Watch for institution filter (client-side only for now)
+watch(institutionFilter, () => {
+  // No need to reload from server, handled client-side
+  // Institution filtering is client-side since backend doesn't support it yet
 })
 
 // Watch for search query changes with debouncing (backend search)
