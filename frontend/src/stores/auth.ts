@@ -31,8 +31,25 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Login failed')
+        let errorMessage = 'Login failed. Please try again.'
+        
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          // If JSON parsing fails, use status-based messages
+          if (response.status === 401) {
+            errorMessage = 'Invalid email or password. Please try again.'
+          } else if (response.status === 403) {
+            errorMessage = 'Your account has been locked. Please contact support.'
+          } else if (response.status === 500) {
+            errorMessage = 'Server error. Please try again later.'
+          } else if (response.status === 0 || !response.status) {
+            errorMessage = 'Cannot connect to server. Please check your connection.'
+          }
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const data: LoginResponse = await response.json()
@@ -46,8 +63,14 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('user', JSON.stringify(data.user))
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'An error occurred during login'
-      throw err
+      if (err instanceof Error) {
+        error.value = err.message
+      } else if (typeof err === 'string') {
+        error.value = err
+      } else {
+        error.value = 'An unexpected error occurred during login'
+      }
+      throw new Error(error.value)
     } finally {
       isLoading.value = false
     }
@@ -97,7 +120,16 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to refresh token')
+        let errorMessage = 'Failed to refresh token'
+        
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = 'Session expired. Please login again.'
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const data: LoginResponse = await response.json()
@@ -132,7 +164,18 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch user')
+        let errorMessage = 'Failed to fetch user information'
+        
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          if (response.status === 401) {
+            errorMessage = 'Session expired. Please login again.'
+          }
+        }
+        
+        throw new Error(errorMessage)
       }
 
       const data: User = await response.json()
@@ -165,8 +208,20 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to change password')
+        let errorMessage = 'Failed to change password'
+        
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          if (response.status === 401) {
+            errorMessage = 'Current password is incorrect'
+          } else if (response.status === 400) {
+            errorMessage = 'New password does not meet requirements'
+          }
+        }
+        
+        throw new Error(errorMessage)
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to change password'

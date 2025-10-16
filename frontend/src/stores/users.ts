@@ -44,8 +44,15 @@ export const useUsersStore = defineStore('users', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to fetch users')
+        let errorMessage = 'Failed to fetch users'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          // Use status-based error message if JSON parsing fails
+          errorMessage = response.status === 401 ? 'Session expired' : errorMessage
+        }
+        throw new Error(errorMessage)
       }
 
       const data: UsersListResponse = await response.json()
@@ -69,8 +76,14 @@ export const useUsersStore = defineStore('users', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to fetch user')
+        let errorMessage = 'Failed to fetch user'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = response.status === 404 ? 'User not found' : errorMessage
+        }
+        throw new Error(errorMessage)
       }
 
       const user: User = await response.json()
@@ -96,8 +109,18 @@ export const useUsersStore = defineStore('users', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create user')
+        let errorMessage = 'Failed to create user'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          if (response.status === 403) {
+            errorMessage = 'Insufficient permissions to create users'
+          } else if (response.status === 409) {
+            errorMessage = 'Email or username already exists'
+          }
+        }
+        throw new Error(errorMessage)
       }
 
       const user: User = await response.json()
@@ -129,8 +152,14 @@ export const useUsersStore = defineStore('users', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update user')
+        let errorMessage = 'Failed to update user'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = response.status === 403 ? 'Insufficient permissions' : errorMessage
+        }
+        throw new Error(errorMessage)
       }
 
       const user: User = await response.json()
@@ -165,8 +194,14 @@ export const useUsersStore = defineStore('users', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete user')
+        let errorMessage = 'Failed to delete user'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = response.status === 403 ? 'Insufficient permissions' : errorMessage
+        }
+        throw new Error(errorMessage)
       }
 
       // Remove from local list
@@ -195,8 +230,14 @@ export const useUsersStore = defineStore('users', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to deactivate user')
+        let errorMessage = 'Failed to deactivate user'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = response.status === 403 ? 'Insufficient permissions' : errorMessage
+        }
+        throw new Error(errorMessage)
       }
 
       // Update in local list
@@ -230,8 +271,14 @@ export const useUsersStore = defineStore('users', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to activate user')
+        let errorMessage = 'Failed to activate user'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = response.status === 403 ? 'Insufficient permissions' : errorMessage
+        }
+        throw new Error(errorMessage)
       }
 
       // Update in local list
