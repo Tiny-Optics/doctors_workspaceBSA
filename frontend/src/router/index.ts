@@ -10,7 +10,8 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: Home
+      component: Home,
+      meta: { requiresGuest: true }
     },
     {
       path: '/login',
@@ -68,6 +69,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/working-parties',
+      name: 'working-parties',
+      component: () => import('../views/ComingSoon.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/admin',
       name: 'admin',
       component: () => import('../views/ComingSoon.vue'),
@@ -84,7 +91,7 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'login' })
   } 
-  // Redirect authenticated users away from login to dashboard
+  // Redirect authenticated users away from guest-only pages (home, login) to dashboard
   else if (to.meta.requiresGuest && authStore.isAuthenticated) {
     next({ name: 'dashboard' })
   }
