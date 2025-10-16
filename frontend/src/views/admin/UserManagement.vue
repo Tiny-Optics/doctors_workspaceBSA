@@ -48,8 +48,9 @@
               v-for="institution in institutionsStore.institutions" 
               :key="institution.id" 
               :value="institution.id"
+              :title="institution.name"
             >
-              {{ institution.shortName || institution.name }}
+              {{ institution.shortName || institution.name.substring(0, 20) }}
             </option>
           </select>
         </div>
@@ -529,11 +530,12 @@
                         v-for="institution in institutionsStore.institutions" 
                         :key="institution.id" 
                         :value="institution.id"
+                        :title="`${institution.name} - ${institution.city}, ${institution.province || ''}`"
                       >
-                        {{ institution.name }} ({{ institution.shortName }}) - {{ institution.city }}
+                        {{ institution.shortName || institution.name.substring(0, 30) }} - {{ institution.city }}
                       </option>
                     </select>
-                    <p class="text-xs text-gray-500 mt-1">Select the user's affiliated institution</p>
+                    <p class="text-xs text-gray-500 mt-1">Select the user's affiliated institution (hover for full name)</p>
                   </div>
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
