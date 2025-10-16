@@ -22,7 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -59,7 +59,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       if (token.value) {
-        await fetch('/api/auth/logout', {
+        await fetch('http://localhost:8080/api/auth/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token.value}`
@@ -88,7 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     try {
-      const response = await fetch('/api/auth/refresh', {
+      const response = await fetch('http://localhost:8080/api/auth/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -125,7 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('http://localhost:8080/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${token.value}`
         }
@@ -155,7 +155,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const response = await fetch('/api/auth/change-password', {
+      const response = await fetch('http://localhost:8080/api/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -39,7 +39,7 @@ export const useUsersStore = defineStore('users', () => {
       if (options?.limit) params.append('limit', String(options.limit))
       if (options?.skip) params.append('skip', String(options.skip))
 
-      const response = await fetch(`/api/users?${params.toString()}`, {
+      const response = await fetch(`http://localhost:8080/api/users?${params.toString()}`, {
         headers: getAuthHeaders()
       })
 
@@ -64,7 +64,7 @@ export const useUsersStore = defineStore('users', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/users/${id}`, {
+      const response = await fetch(`http://localhost:8080/api/users/${id}`, {
         headers: getAuthHeaders()
       })
 
@@ -89,7 +89,7 @@ export const useUsersStore = defineStore('users', () => {
     error.value = null
 
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetch('http://localhost:8080/api/users', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(request)
@@ -122,7 +122,7 @@ export const useUsersStore = defineStore('users', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/users/${id}`, {
+      const response = await fetch(`http://localhost:8080/api/users/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(request)
@@ -159,7 +159,7 @@ export const useUsersStore = defineStore('users', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/users/${id}`, {
+      const response = await fetch(`http://localhost:8080/api/users/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       })
@@ -189,7 +189,7 @@ export const useUsersStore = defineStore('users', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/users/${id}/deactivate`, {
+      const response = await fetch(`http://localhost:8080/api/users/${id}/deactivate`, {
         method: 'POST',
         headers: getAuthHeaders()
       })
@@ -224,7 +224,7 @@ export const useUsersStore = defineStore('users', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/users/${id}/activate`, {
+      const response = await fetch(`http://localhost:8080/api/users/${id}/activate`, {
         method: 'POST',
         headers: getAuthHeaders()
       })
