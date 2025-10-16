@@ -1,0 +1,580 @@
+<template>
+  <div class="p-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
+        <p class="text-gray-600 mt-2">Manage users, roles, and permissions</p>
+      </div>
+      <button
+        @click="showCreateModal = true"
+        class="bg-bloodsa-red text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition-colors font-medium flex items-center space-x-2"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        <span>Add User</span>
+      </button>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Search -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
+          <div class="relative">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search by name, email, or role..."
+              class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+            />
+            <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Role Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Role</label>
+          <select
+            v-model="roleFilter"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+          >
+            <option value="">All Roles</option>
+            <option value="haematologist">Haematologist</option>
+            <option value="physician">Physician</option>
+            <option value="data_capturer">Data Capturer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+          <select
+            v-model="statusFilter"
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                User
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Role
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Institution
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Last Login
+              </th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 bg-bloodsa-red rounded-full flex items-center justify-center text-white font-semibold">
+                    {{ getUserInitials(user) }}
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">
+                      {{ user.profile.firstName }} {{ user.profile.lastName }}
+                    </div>
+                    <div class="text-sm text-gray-500">{{ user.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span 
+                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  :class="getRoleBadgeClass(user.role)"
+                >
+                  {{ getRoleDisplayName(user.role) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {{ user.profile.institution }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span 
+                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  :class="user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                >
+                  {{ user.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ formatLastLogin(user.lastLoginAt) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex items-center justify-end space-x-2">
+                  <button
+                    @click="viewUser(user)"
+                    class="text-blue-600 hover:text-blue-900 p-1 rounded"
+                    title="View Details"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                  <button
+                    @click="editUser(user)"
+                    class="text-gray-600 hover:text-gray-900 p-1 rounded"
+                    title="Edit User"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    @click="toggleUserStatus(user)"
+                    class="p-1 rounded"
+                    :class="user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'"
+                    :title="user.isActive ? 'Deactivate User' : 'Activate User'"
+                  >
+                    <svg v-if="user.isActive" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+                    </svg>
+                    <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  <button
+                    @click="deleteUser(user)"
+                    class="text-red-600 hover:text-red-900 p-1 rounded"
+                    title="Delete User"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <button
+            @click="previousPage"
+            :disabled="currentPage === 1"
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <button
+            @click="nextPage"
+            :disabled="currentPage === totalPages"
+            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              Showing
+              <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
+              to
+              <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredUsers.length) }}</span>
+              of
+              <span class="font-medium">{{ filteredUsers.length }}</span>
+              results
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button
+                @click="previousPage"
+                :disabled="currentPage === 1"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+              <button
+                v-for="page in visiblePages"
+                :key="page"
+                @click="goToPage(page)"
+                class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+                :class="page === currentPage 
+                  ? 'z-10 bg-bloodsa-red border-bloodsa-red text-white' 
+                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'"
+              >
+                {{ page }}
+              </button>
+              <button
+                @click="nextPage"
+                :disabled="currentPage === totalPages"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create User Modal -->
+    <div v-if="showCreateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Create New User</h3>
+          <form @submit.prevent="createUser">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <input
+                  v-model="newUser.firstName"
+                  type="text"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <input
+                  v-model="newUser.lastName"
+                  type="text"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  v-model="newUser.email"
+                  type="email"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select
+                  v-model="newUser.role"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                >
+                  <option value="">Select Role</option>
+                  <option value="haematologist">Haematologist</option>
+                  <option value="physician">Physician</option>
+                  <option value="data_capturer">Data Capturer</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+                <input
+                  v-model="newUser.institution"
+                  type="text"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div class="flex justify-end space-x-3 mt-6">
+              <button
+                type="button"
+                @click="showCreateModal = false"
+                class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="px-4 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors"
+              >
+                Create User
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useUsersStore } from '@/stores/users'
+import { getUserRoleDisplayName } from '@/types/user'
+
+const usersStore = useUsersStore()
+
+// Reactive data
+const searchQuery = ref('')
+const roleFilter = ref('')
+const statusFilter = ref('')
+const showCreateModal = ref(false)
+const currentPage = ref(1)
+const itemsPerPage = 10
+
+// New user form data
+const newUser = ref({
+  firstName: '',
+  lastName: '',
+  email: '',
+  role: '',
+  institution: ''
+})
+
+// Mock users data (replace with actual API call)
+const users = ref([
+  {
+    id: '1',
+    email: 'admin@bloodsa.org.za',
+    username: 'superadmin',
+    role: 'admin',
+    adminLevel: 'super_admin',
+    isActive: true,
+    profile: {
+      firstName: 'Super',
+      lastName: 'Admin',
+      institution: 'BLOODSA',
+      location: 'South Africa'
+    },
+    lastLoginAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '2',
+    email: 'dr.smith@hospital.co.za',
+    username: 'dsmith',
+    role: 'haematologist',
+    adminLevel: 'none',
+    isActive: true,
+    profile: {
+      firstName: 'Dr. Sarah',
+      lastName: 'Smith',
+      institution: 'Groote Schuur Hospital',
+      location: 'Cape Town'
+    },
+    lastLoginAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '3',
+    email: 'dr.jones@clinic.co.za',
+    username: 'djones',
+    role: 'physician',
+    adminLevel: 'none',
+    isActive: false,
+    profile: {
+      firstName: 'Dr. Michael',
+      lastName: 'Jones',
+      institution: 'Tygerberg Hospital',
+      location: 'Cape Town'
+    },
+    lastLoginAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+])
+
+// Computed properties
+const filteredUsers = computed(() => {
+  let filtered = users.value
+
+  // Search filter
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(user => 
+      user.profile.firstName.toLowerCase().includes(query) ||
+      user.profile.lastName.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query) ||
+      user.role.toLowerCase().includes(query)
+    )
+  }
+
+  // Role filter
+  if (roleFilter.value) {
+    filtered = filtered.filter(user => user.role === roleFilter.value)
+  }
+
+  // Status filter
+  if (statusFilter.value) {
+    filtered = filtered.filter(user => 
+      statusFilter.value === 'active' ? user.isActive : !user.isActive
+    )
+  }
+
+  return filtered
+})
+
+const totalPages = computed(() => Math.ceil(filteredUsers.value.length / itemsPerPage))
+
+const visiblePages = computed(() => {
+  const pages = []
+  const start = Math.max(1, currentPage.value - 2)
+  const end = Math.min(totalPages.value, start + 4)
+  
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+  return pages
+})
+
+// Methods
+const getUserInitials = (user: any) => {
+  const firstName = user.profile.firstName || ''
+  const lastName = user.profile.lastName || ''
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+}
+
+const getRoleDisplayName = (role: string) => {
+  return getUserRoleDisplayName(role as any)
+}
+
+const getRoleBadgeClass = (role: string) => {
+  const classes = {
+    haematologist: 'bg-red-100 text-red-800',
+    physician: 'bg-green-100 text-green-800',
+    data_capturer: 'bg-purple-100 text-purple-800',
+    admin: 'bg-orange-100 text-orange-800'
+  }
+  return classes[role as keyof typeof classes] || 'bg-gray-100 text-gray-800'
+}
+
+const formatLastLogin = (lastLogin?: string) => {
+  if (!lastLogin) return 'Never'
+  const date = new Date(lastLogin)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  
+  if (diffMins < 60) return `${diffMins}m ago`
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  const diffDays = Math.floor(diffHours / 24)
+  return `${diffDays}d ago`
+}
+
+const viewUser = (user: any) => {
+  console.log('View user:', user)
+  // TODO: Implement user details modal or navigate to user details page
+}
+
+const editUser = (user: any) => {
+  console.log('Edit user:', user)
+  // TODO: Implement edit user modal
+}
+
+const toggleUserStatus = async (user: any) => {
+  try {
+    if (user.isActive) {
+      await usersStore.deactivateUser(user.id)
+    } else {
+      await usersStore.activateUser(user.id)
+    }
+    user.isActive = !user.isActive
+  } catch (error) {
+    console.error('Failed to toggle user status:', error)
+  }
+}
+
+const deleteUser = async (user: any) => {
+  if (confirm(`Are you sure you want to delete ${user.profile.firstName} ${user.profile.lastName}?`)) {
+    try {
+      await usersStore.deleteUser(user.id)
+      const index = users.value.findIndex(u => u.id === user.id)
+      if (index > -1) {
+        users.value.splice(index, 1)
+      }
+    } catch (error) {
+      console.error('Failed to delete user:', error)
+    }
+  }
+}
+
+const createUser = async () => {
+  try {
+    // TODO: Implement actual user creation API call
+    const newUserData = {
+      id: Date.now().toString(),
+      email: newUser.value.email,
+      username: newUser.value.email.split('@')[0],
+      role: newUser.value.role,
+      adminLevel: 'none',
+      isActive: true,
+      profile: {
+        firstName: newUser.value.firstName,
+        lastName: newUser.value.lastName,
+        institution: newUser.value.institution,
+        location: 'South Africa'
+      },
+      lastLoginAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    
+    users.value.push(newUserData)
+    showCreateModal.value = false
+    
+    // Reset form
+    newUser.value = {
+      firstName: '',
+      lastName: '',
+      email: '',
+      role: '',
+      institution: ''
+    }
+  } catch (error) {
+    console.error('Failed to create user:', error)
+  }
+}
+
+const previousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+const goToPage = (page: number) => {
+  currentPage.value = page
+}
+
+onMounted(() => {
+  // TODO: Load users from API
+  console.log('Loading users...')
+})
+</script>
