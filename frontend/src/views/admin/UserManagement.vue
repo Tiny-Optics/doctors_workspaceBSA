@@ -128,8 +128,8 @@
               </th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-gray-50">
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="user in displayUsers" :key="user.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="w-10 h-10 bg-bloodsa-red rounded-full flex items-center justify-center text-white font-semibold">
@@ -241,18 +241,31 @@
               Showing
               <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
               to
-              <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredUsers.length) }}</span>
+              <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, totalUsers) }}</span>
               of
-              <span class="font-medium">{{ filteredUsers.length }}</span>
+              <span class="font-medium">{{ totalUsers }}</span>
               results
             </p>
           </div>
           <div>
             <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <!-- Skip to first page -->
+              <button
+                @click="goToFirstPage"
+                :disabled="currentPage === 1"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Go to first page"
+              >
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M15.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 010 1.414zm-6 0a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L5.414 10l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
+              <!-- Previous page -->
               <button
                 @click="previousPage"
                 :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Previous page"
               >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
@@ -269,13 +282,26 @@
               >
                 {{ page }}
               </button>
+              <!-- Next page -->
               <button
                 @click="nextPage"
                 :disabled="currentPage === totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Next page"
               >
                 <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+              <!-- Skip to last page -->
+              <button
+                @click="goToLastPage"
+                :disabled="currentPage === totalPages"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Go to last page"
+              >
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10.293 15.707a1 1 0 010-1.414L14.586 10l-4.293-4.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0zm-4 0a1 1 0 010-1.414L9.586 10l-3.293-3.293a1 1 0 111.414-1.414l5 5a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                 </svg>
               </button>
             </nav>
@@ -432,7 +458,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useUsersStore } from '@/stores/users'
 import { getUserRoleDisplayName, type User } from '@/types/user'
 import { useToast } from '@/composables/useToast'
@@ -461,14 +487,18 @@ const newUser = ref({
 
 // Real users data from API
 const users = ref<User[]>([])
+const totalUsers = ref(0)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Computed properties
-const filteredUsers = computed(() => {
+// Computed properties for server-side pagination
+const totalPages = computed(() => Math.ceil(totalUsers.value / itemsPerPage))
+
+// For server-side pagination, we display the users with client-side search filtering
+const displayUsers = computed(() => {
   let filtered = users.value
 
-  // Search filter
+  // Apply client-side search filter (since backend doesn't support search yet)
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(user => 
@@ -479,22 +509,8 @@ const filteredUsers = computed(() => {
     )
   }
 
-  // Role filter
-  if (roleFilter.value) {
-    filtered = filtered.filter(user => user.role === roleFilter.value)
-  }
-
-  // Status filter
-  if (statusFilter.value) {
-    filtered = filtered.filter(user => 
-      statusFilter.value === 'active' ? user.isActive : !user.isActive
-    )
-  }
-
   return filtered
 })
-
-const totalPages = computed(() => Math.ceil(filteredUsers.value.length / itemsPerPage))
 
 const visiblePages = computed(() => {
   const pages = []
@@ -513,6 +529,24 @@ const getUserInitials = (user: any) => {
   const lastName = user.profile.lastName || ''
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
 }
+
+// Reset pagination when filters change
+const resetPagination = () => {
+  currentPage.value = 1
+}
+
+// Watch for filter changes and reload data
+watch([roleFilter, statusFilter], () => {
+  resetPagination()
+  loadUsers() // Reload with new filters
+})
+
+// Watch for search query changes (client-side filtering only)
+// Note: Search is handled client-side since backend doesn't support search yet
+watch(searchQuery, () => {
+  // No need to reload from server, just filter client-side
+  // The displayUsers computed property will handle the filtering
+})
 
 const getRoleDisplayName = (role: string) => {
   return getUserRoleDisplayName(role as any)
@@ -662,35 +696,78 @@ const createUser = async () => {
 const previousPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--
+    loadUsers() // Load previous page from server
   }
 }
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
     currentPage.value++
+    loadUsers() // Load next page from server
   }
 }
 
 const goToPage = (page: number) => {
-  currentPage.value = page
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    loadUsers() // Load new page from server
+  }
 }
 
-// Load users from API
+const goToFirstPage = () => {
+  if (currentPage.value !== 1) {
+    currentPage.value = 1
+    loadUsers() // Load first page from server
+  }
+}
+
+const goToLastPage = () => {
+  if (currentPage.value !== totalPages.value) {
+    currentPage.value = totalPages.value
+    loadUsers() // Load last page from server
+  }
+}
+
+// Ensure current page is valid when total pages change
+watch(totalPages, (newTotalPages) => {
+  if (currentPage.value > newTotalPages && newTotalPages > 0) {
+    currentPage.value = newTotalPages
+  }
+})
+
+// Load users from API with server-side pagination
 const loadUsers = async () => {
   try {
     loading.value = true
     error.value = null
-    console.log('Loading users from API...')
-    await usersStore.fetchUsers()
+    console.log('Loading users from API...', { page: currentPage.value, limit: itemsPerPage })
+    
+    // Calculate skip value for server-side pagination
+    const skip = (currentPage.value - 1) * itemsPerPage
+    
+    // Fetch users with pagination parameters
+    await usersStore.fetchUsers({ 
+      limit: itemsPerPage,
+      skip: skip,
+      role: roleFilter.value as any || undefined,
+      isActive: statusFilter.value === 'active' ? true : statusFilter.value === 'inactive' ? false : undefined
+    })
+    
     console.log('Users loaded from store:', usersStore.users)
-    // Get users from store state after fetch
+    console.log('Total users:', usersStore.total)
+    
+    // Get users and total from store state after fetch
     users.value = usersStore.users || []
+    totalUsers.value = usersStore.total || 0
+    
     console.log('Users set in component:', users.value)
+    console.log('Total users set:', totalUsers.value)
   } catch (err) {
     console.error('Failed to load users:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load users'
     // Set empty array on error to prevent undefined issues
     users.value = []
+    totalUsers.value = 0
   } finally {
     loading.value = false
   }
