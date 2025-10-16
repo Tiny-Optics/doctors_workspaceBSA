@@ -482,6 +482,176 @@
         </div>
       </div>
     </div>
+
+    <!-- View User Details Modal -->
+    <div v-if="showViewModal && userToView" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-10 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-4">
+            <div class="w-16 h-16 bg-bloodsa-red rounded-full flex items-center justify-center text-white text-2xl font-bold">
+              {{ getUserInitials(userToView) }}
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-gray-900">
+                {{ userToView.profile.firstName }} {{ userToView.profile.lastName }}
+              </h3>
+              <p class="text-sm text-gray-500 flex items-center space-x-2 mt-1">
+                <span 
+                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  :class="getRoleBadgeClass(userToView.role)"
+                >
+                  {{ getRoleDisplayName(userToView.role) }}
+                </span>
+                <span 
+                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  :class="userToView.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                >
+                  {{ userToView.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </p>
+            </div>
+          </div>
+          <button
+            @click="closeViewModal"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="space-y-6">
+          <!-- Contact Information -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Contact Information
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Email</span>
+                <span class="text-sm text-gray-900">{{ userToView.email }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Username</span>
+                <span class="text-sm text-gray-900">{{ userToView.username }}</span>
+              </div>
+              <div v-if="userToView.profile.phoneNumber" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Phone</span>
+                <span class="text-sm text-gray-900">{{ userToView.profile.phoneNumber }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Professional Information -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Professional Information
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Institution</span>
+                <span class="text-sm text-gray-900">{{ userToView.profile.institution }}</span>
+              </div>
+              <div v-if="userToView.profile.location" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Location</span>
+                <span class="text-sm text-gray-900">{{ userToView.profile.location }}</span>
+              </div>
+              <div v-if="userToView.profile.specialty" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Specialty</span>
+                <span class="text-sm text-gray-900">{{ userToView.profile.specialty }}</span>
+              </div>
+              <div v-if="userToView.profile.registrationNumber" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Registration Number</span>
+                <span class="text-sm text-gray-900">{{ userToView.profile.registrationNumber }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Account Information -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Account Information
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">User ID</span>
+                <span class="text-sm text-gray-900 font-mono">{{ userToView.id }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Account Status</span>
+                <span 
+                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  :class="userToView.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                >
+                  {{ userToView.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Last Login</span>
+                <span class="text-sm text-gray-900">{{ formatLastLogin(userToView.lastLoginAt) }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Account Created</span>
+                <span class="text-sm text-gray-900">{{ new Date(userToView.createdAt).toLocaleDateString() }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Last Updated</span>
+                <span class="text-sm text-gray-900">{{ new Date(userToView.updatedAt).toLocaleDateString() }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Information (if applicable) -->
+          <div v-if="userToView.role === 'admin' && userToView.adminLevel">
+            <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Admin Permissions
+            </h4>
+            <div class="bg-orange-50 rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Admin Level</span>
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-orange-100 text-orange-800">
+                  {{ userToView.adminLevel.replace('_', ' ').toUpperCase() }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+          <button
+            @click="closeViewModal"
+            class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+          >
+            Close
+          </button>
+          <button
+            @click="editUser(userToView)"
+            class="px-4 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors flex items-center space-x-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span>Edit User</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -500,7 +670,9 @@ const roleFilter = ref('')
 const statusFilter = ref('')
 const showCreateModal = ref(false)
 const showDeleteModal = ref(false)
+const showViewModal = ref(false)
 const userToDelete = ref<User | null>(null)
+const userToView = ref<User | null>(null)
 const currentPage = ref(1)
 const itemsPerPage = 10
 
@@ -598,8 +770,13 @@ const formatLastLogin = (lastLogin?: string) => {
 }
 
 const viewUser = (user: any) => {
-  console.log('View user:', user)
-  // TODO: Implement user details modal or navigate to user details page
+  userToView.value = user
+  showViewModal.value = true
+}
+
+const closeViewModal = () => {
+  showViewModal.value = false
+  userToView.value = null
 }
 
 const editUser = (user: any) => {
