@@ -91,6 +91,11 @@ const router = createRouter({
           component: () => import('../views/admin/UserManagement.vue')
         },
         {
+          path: 'institutions',
+          name: 'admin-institutions',
+          component: () => import('../views/admin/InstitutionManagement.vue')
+        },
+        {
           path: 'settings',
           name: 'admin-settings',
           component: () => import('../views/admin/SystemSettings.vue')

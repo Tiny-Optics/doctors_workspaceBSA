@@ -95,6 +95,24 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
           </svg>
           
+          <!-- Institution Icon -->
+          <svg 
+            v-else-if="item.name === 'Institution Management'"
+            class="flex-shrink-0 transition-colors duration-200"
+            :class="[
+              isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
+              { 
+                'text-white': $route.path === item.to,
+                'text-gray-600 group-hover:text-white': $route.path !== item.to
+              }
+            ]"
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          
           <!-- Settings Icon -->
           <svg 
             v-else-if="item.name === 'System Settings'"
@@ -193,6 +211,10 @@ const navigationItems = [
   {
     name: 'User Management',
     to: '/admin/users'
+  },
+  {
+    name: 'Institution Management',
+    to: '/admin/institutions'
   },
   {
     name: 'System Settings',
