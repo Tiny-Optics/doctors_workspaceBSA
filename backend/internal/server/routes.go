@@ -3,6 +3,12 @@ package server
 import (
 	"net/http"
 
+	"backend/internal/handlers"
+	"backend/internal/middleware"
+	"backend/internal/models"
+	"backend/internal/repository"
+	"backend/internal/service"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -17,9 +23,58 @@ func (s *Server) RegisterRoutes() http.Handler {
 		AllowCredentials: true, // Enable cookies/auth
 	}))
 
+	// Public routes
 	r.GET("/", s.HelloWorldHandler)
-
 	r.GET("/health", s.healthHandler)
+
+	// Get MongoDB database
+	db := s.db.GetDB()
+
+	// Initialize repositories
+	userRepo := repository.NewUserRepository(db)
+	sessionRepo := repository.NewSessionRepository(db)
+	auditRepo := repository.NewAuditRepository(db)
+
+	// Initialize services
+	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
+	userService := service.NewUserService(userRepo, auditRepo, authService)
+
+	// Initialize handlers
+	authHandler := handlers.NewAuthHandler(authService)
+	userHandler := handlers.NewUserHandler(userService)
+
+	// API routes group
+	api := r.Group("/api")
+	{
+		// Auth routes
+		auth := api.Group("/auth")
+		{
+			auth.POST("/login", authHandler.Login)
+			auth.POST("/refresh", authHandler.RefreshToken)
+
+			// Protected auth routes
+			authProtected := auth.Group("")
+			authProtected.Use(middleware.AuthMiddleware(authService))
+			{
+				authProtected.GET("/me", authHandler.Me)
+				authProtected.POST("/logout", authHandler.Logout)
+				authProtected.POST("/change-password", authHandler.ChangePassword)
+			}
+		}
+
+		// User routes (all protected)
+		users := api.Group("/users")
+		users.Use(middleware.AuthMiddleware(authService))
+		{
+			users.GET("", userHandler.ListUsers)
+			users.GET("/:id", userHandler.GetUser)
+			users.POST("", middleware.RequirePermission(models.PermManageUsers), userHandler.CreateUser)
+			users.PUT("/:id", userHandler.UpdateUser)
+			users.POST("/:id/activate", middleware.RequirePermission(models.PermManageUsers), userHandler.ActivateUser)
+			users.POST("/:id/deactivate", middleware.RequirePermission(models.PermManageUsers), userHandler.DeactivateUser)
+			users.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), userHandler.DeleteUser)
+		}
+	}
 
 	return r
 }
