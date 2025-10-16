@@ -582,11 +582,17 @@ const loadUsers = async () => {
   try {
     loading.value = true
     error.value = null
-    const usersData = await usersStore.fetchUsers()
-    users.value = usersData.users || []
+    console.log('Loading users from API...')
+    await usersStore.fetchUsers()
+    console.log('Users loaded from store:', usersStore.users)
+    // Get users from store state after fetch
+    users.value = usersStore.users || []
+    console.log('Users set in component:', users.value)
   } catch (err) {
     console.error('Failed to load users:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load users'
+    // Set empty array on error to prevent undefined issues
+    users.value = []
   } finally {
     loading.value = false
   }

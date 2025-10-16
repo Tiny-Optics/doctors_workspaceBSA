@@ -279,9 +279,10 @@ const refreshStats = async () => {
 const loadSystemStats = async () => {
   try {
     // Load real user data to get accurate stats
-    const usersData = await usersStore.fetchUsers()
-    const totalUsers = usersData.users?.length || 0
-    const activeUsers = usersData.users?.filter((user: any) => user.isActive).length || 0
+    await usersStore.fetchUsers()
+    // Get users from store state after fetch
+    const totalUsers = usersStore.users?.length || 0
+    const activeUsers = usersStore.users?.filter((user: any) => user.isActive).length || 0
     
     // Update stats with real data
     stats.value = {
