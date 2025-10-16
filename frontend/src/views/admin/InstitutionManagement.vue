@@ -538,6 +538,344 @@
       </div>
     </div>
 
+    <!-- View Institution Details Modal -->
+    <div v-if="showViewModal && institutionToView" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-10 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-4">
+            <div class="w-16 h-16 bg-bloodsa-red rounded-full flex items-center justify-center text-white text-xl font-bold">
+              {{ institutionToView.shortName || institutionToView.name.substring(0, 2).toUpperCase() }}
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-gray-900">
+                {{ institutionToView.name }}
+              </h3>
+              <p class="text-sm text-gray-500 flex items-center space-x-2 mt-1">
+                <span 
+                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  :class="getTypeBadgeClass(institutionToView.type)"
+                >
+                  {{ getTypeDisplayName(institutionToView.type) }}
+                </span>
+                <span 
+                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  :class="institutionToView.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                >
+                  {{ institutionToView.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </p>
+            </div>
+          </div>
+          <button
+            @click="closeViewModal"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="space-y-6">
+          <!-- Location Information -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Location Information
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">City</span>
+                <span class="text-sm text-gray-900">{{ institutionToView.city }}</span>
+              </div>
+              <div v-if="institutionToView.province" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Province</span>
+                <span class="text-sm text-gray-900">{{ institutionToView.province }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Country</span>
+                <span class="text-sm text-gray-900">{{ institutionToView.country }}</span>
+              </div>
+              <div v-if="institutionToView.address" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Address</span>
+                <span class="text-sm text-gray-900 text-right">{{ institutionToView.address }}</span>
+              </div>
+              <div v-if="institutionToView.postalCode" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Postal Code</span>
+                <span class="text-sm text-gray-900">{{ institutionToView.postalCode }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Information -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Contact Information
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div v-if="institutionToView.phone" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Phone</span>
+                <span class="text-sm text-gray-900">{{ institutionToView.phone }}</span>
+              </div>
+              <div v-if="institutionToView.email" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Email</span>
+                <span class="text-sm text-gray-900">{{ institutionToView.email }}</span>
+              </div>
+              <div v-if="institutionToView.website" class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Website</span>
+                <a :href="institutionToView.website" target="_blank" class="text-sm text-bloodsa-red hover:underline">
+                  {{ institutionToView.website }}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Institution Details -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Institution Details
+            </h4>
+            <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Institution ID</span>
+                <span class="text-sm text-gray-900 font-mono">{{ institutionToView.id }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Status</span>
+                <span 
+                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  :class="institutionToView.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                >
+                  {{ institutionToView.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Created</span>
+                <span class="text-sm text-gray-900">{{ new Date(institutionToView.createdAt).toLocaleDateString() }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-600">Last Updated</span>
+                <span class="text-sm text-gray-900">{{ new Date(institutionToView.updatedAt).toLocaleDateString() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+          <button
+            @click="closeViewModal"
+            class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+          >
+            Close
+          </button>
+          <button
+            @click="editInstitution(institutionToView)"
+            class="px-4 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors flex items-center space-x-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span>Edit Institution</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Institution Modal -->
+    <div v-if="showEditModal && institutionToEdit" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div class="relative top-10 mx-auto p-6 border w-full max-w-3xl shadow-lg rounded-lg bg-white my-10">
+        <div>
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-bold text-gray-900">Edit Institution</h3>
+            <button
+              @click="showEditModal = false; institutionToEdit = null"
+              class="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <form @submit.prevent="updateInstitution">
+            <div class="space-y-6">
+              <!-- Basic Information -->
+              <div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Basic Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="institutionToEdit.name"
+                      type="text"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Short Name</label>
+                    <input
+                      v-model="institutionToEdit.shortName"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type <span class="text-red-500">*</span></label>
+                    <select
+                      v-model="institutionToEdit.type"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    >
+                      <option value="university">University</option>
+                      <option value="hospital">Hospital</option>
+                      <option value="laboratory">Laboratory</option>
+                      <option value="research_center">Research Center</option>
+                      <option value="government">Government</option>
+                      <option value="private_practice">Private Practice</option>
+                      <option value="ngo">NGO</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Location Information -->
+              <div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Location Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">City <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="institutionToEdit.city"
+                      type="text"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                    <input
+                      v-model="institutionToEdit.province"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Country <span class="text-red-500">*</span></label>
+                    <input
+                      v-model="institutionToEdit.country"
+                      type="text"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                    <input
+                      v-model="institutionToEdit.postalCode"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input
+                      v-model="institutionToEdit.address"
+                      type="text"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contact Information -->
+              <div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Contact Information
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input
+                      v-model="institutionToEdit.phone"
+                      type="tel"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                      v-model="institutionToEdit.email"
+                      type="email"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                    <input
+                      v-model="institutionToEdit.website"
+                      type="url"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                @click="showEditModal = false; institutionToEdit = null"
+                class="px-6 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="loading"
+                class="px-6 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <svg v-if="loading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>{{ loading ? 'Updating...' : 'Update Institution' }}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
@@ -693,8 +1031,50 @@ const closeViewModal = () => {
 }
 
 const editInstitution = (institution: Institution) => {
-  institutionToEdit.value = institution
+  // Create a copy to avoid mutating the original
+  institutionToEdit.value = { ...institution }
+  showViewModal.value = false // Close view modal if open
   showEditModal.value = true
+}
+
+const updateInstitution = async () => {
+  if (!institutionToEdit.value) return
+  
+  const institutionName = institutionToEdit.value.name
+  const institutionId = institutionToEdit.value.id
+  
+  try {
+    loading.value = true
+    error.value = null
+    
+    const updateData = {
+      name: institutionToEdit.value.name,
+      shortName: institutionToEdit.value.shortName || undefined,
+      type: institutionToEdit.value.type,
+      country: institutionToEdit.value.country,
+      province: institutionToEdit.value.province || undefined,
+      city: institutionToEdit.value.city,
+      address: institutionToEdit.value.address || undefined,
+      postalCode: institutionToEdit.value.postalCode || undefined,
+      phone: institutionToEdit.value.phone || undefined,
+      email: institutionToEdit.value.email || undefined,
+      website: institutionToEdit.value.website || undefined
+    }
+    
+    await institutionsStore.updateInstitution(institutionId, updateData)
+    await loadInstitutions()
+    
+    showEditModal.value = false
+    institutionToEdit.value = null
+    
+    toast.success(`${institutionName} has been successfully updated`)
+  } catch (err) {
+    console.error('Failed to update institution:', err)
+    error.value = err instanceof Error ? err.message : 'Failed to update institution'
+    toast.error(`Failed to update ${institutionName}. ${err instanceof Error ? err.message : 'Please try again.'}`)
+  } finally {
+    loading.value = false
+  }
 }
 
 const toggleInstitutionStatus = async (institution: Institution) => {
