@@ -46,10 +46,10 @@
             <option value="">All Types</option>
             <option value="university">University</option>
             <option value="hospital">Hospital</option>
-            <option value="laboratory">Laboratory</option>
-            <option value="research_center">Research Center</option>
-            <option value="government">Government</option>
-            <option value="private_practice">Private Practice</option>
+            <option value="laboratory">Lab</option>
+            <option value="research_center">Research</option>
+            <option value="government">Govt</option>
+            <option value="private_practice">Private</option>
             <option value="ngo">NGO</option>
             <option value="other">Other</option>
           </select>
@@ -401,10 +401,10 @@
                       <option value="">Select Type</option>
                       <option value="university">University</option>
                       <option value="hospital">Hospital</option>
-                      <option value="laboratory">Laboratory</option>
-                      <option value="research_center">Research Center</option>
-                      <option value="government">Government</option>
-                      <option value="private_practice">Private Practice</option>
+                      <option value="laboratory">Lab</option>
+                      <option value="research_center">Research</option>
+                      <option value="government">Govt</option>
+                      <option value="private_practice">Private</option>
                       <option value="ngo">NGO</option>
                       <option value="other">Other</option>
                     </select>
@@ -747,10 +747,10 @@
                     >
                       <option value="university">University</option>
                       <option value="hospital">Hospital</option>
-                      <option value="laboratory">Laboratory</option>
-                      <option value="research_center">Research Center</option>
-                      <option value="government">Government</option>
-                      <option value="private_practice">Private Practice</option>
+                      <option value="laboratory">Lab</option>
+                      <option value="research_center">Research</option>
+                      <option value="government">Govt</option>
+                      <option value="private_practice">Private</option>
                       <option value="ngo">NGO</option>
                       <option value="other">Other</option>
                     </select>
