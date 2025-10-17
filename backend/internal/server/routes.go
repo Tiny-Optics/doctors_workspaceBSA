@@ -38,7 +38,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
-	institutionService := service.NewInstitutionService(institutionRepo, auditRepo)
+	institutionService := service.NewInstitutionService(institutionRepo, userRepo, auditRepo)
 	userService := service.NewUserService(userRepo, auditRepo, authService)
 
 	// Initialize handlers

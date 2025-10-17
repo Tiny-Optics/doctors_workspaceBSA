@@ -190,6 +190,8 @@ func (h *InstitutionHandler) DeleteInstitution(c *gin.Context) {
 			statusCode = http.StatusForbidden
 		} else if err == repository.ErrInstitutionNotFound {
 			statusCode = http.StatusNotFound
+		} else if err == service.ErrInstitutionHasUsers {
+			statusCode = http.StatusConflict
 		}
 		c.JSON(statusCode, gin.H{"error": err.Error()})
 		return

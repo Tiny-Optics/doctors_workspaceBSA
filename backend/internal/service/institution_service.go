@@ -11,16 +11,22 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var (
+	ErrInstitutionHasUsers = errors.New("cannot delete institution: users are still associated with it")
+)
+
 // InstitutionService handles business logic for institutions
 type InstitutionService struct {
 	institutionRepo *repository.InstitutionRepository
+	userRepo        *repository.UserRepository
 	auditRepo       *repository.AuditRepository
 }
 
 // NewInstitutionService creates a new InstitutionService
-func NewInstitutionService(institutionRepo *repository.InstitutionRepository, auditRepo *repository.AuditRepository) *InstitutionService {
+func NewInstitutionService(institutionRepo *repository.InstitutionRepository, userRepo *repository.UserRepository, auditRepo *repository.AuditRepository) *InstitutionService {
 	return &InstitutionService{
 		institutionRepo: institutionRepo,
+		userRepo:        userRepo,
 		auditRepo:       auditRepo,
 	}
 }
@@ -175,6 +181,15 @@ func (s *InstitutionService) DeleteInstitution(ctx context.Context, id primitive
 	institution, err := s.institutionRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
+	}
+
+	// Check if any users are still associated with this institution
+	userCount, err := s.userRepo.Count(ctx, bson.M{"profile.institution_id": id})
+	if err != nil {
+		return err
+	}
+	if userCount > 0 {
+		return ErrInstitutionHasUsers
 	}
 
 	if err := s.institutionRepo.Delete(ctx, id); err != nil {
