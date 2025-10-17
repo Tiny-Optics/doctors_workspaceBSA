@@ -219,7 +219,7 @@ func (s *AuditService) getUserNameFromDetails(details map[string]interface{}) st
 	// Try to get first_name and last_name
 	firstName, firstOk := details["first_name"].(string)
 	lastName, lastOk := details["last_name"].(string)
-	
+
 	if firstOk && lastOk {
 		return firstName + " " + lastName
 	}

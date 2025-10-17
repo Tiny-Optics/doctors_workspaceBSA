@@ -29,7 +29,13 @@ const router = createRouter({
     {
       path: '/sops',
       name: 'sops',
-      component: () => import('../views/ComingSoon.vue'),
+      component: () => import('../views/sops/SOPs.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/sops/:disease',
+      name: 'sops-list',
+      component: () => import('../views/sops/SOPList.vue'),
       meta: { requiresAuth: true }
     },
     {
