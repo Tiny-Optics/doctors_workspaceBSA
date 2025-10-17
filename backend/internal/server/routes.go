@@ -35,18 +35,22 @@ func (s *Server) RegisterRoutes() http.Handler {
 	sessionRepo := repository.NewSessionRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
 	institutionRepo := repository.NewInstitutionRepository(db)
+	sopCategoryRepo := repository.NewSOPCategoryRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
 	institutionService := service.NewInstitutionService(institutionRepo, userRepo, auditRepo)
 	userService := service.NewUserService(userRepo, auditRepo, authService)
 	auditService := service.NewAuditService(auditRepo, userRepo)
+	dropboxService := service.NewDropboxService()
+	sopCategoryService := service.NewSOPCategoryService(sopCategoryRepo, dropboxService, auditRepo, userRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
 	institutionHandler := handlers.NewInstitutionHandler(institutionService)
 	statsHandler := handlers.NewStatsHandler(userService, institutionService, auditService)
+	sopCategoryHandler := handlers.NewSOPCategoryHandler(sopCategoryService)
 
 	// API routes group
 	api := r.Group("/api")
@@ -99,6 +103,24 @@ func (s *Server) RegisterRoutes() http.Handler {
 		{
 			stats.GET("/admin", middleware.RequirePermission(models.PermManageUsers), statsHandler.GetAdminStats)
 			stats.GET("/recent-activity", middleware.RequirePermission(models.PermManageUsers), statsHandler.GetRecentActivity)
+		}
+
+		// SOP routes
+		sops := api.Group("/sops")
+		sops.Use(middleware.AuthMiddleware(authService))
+		{
+			// Categories (read for all authenticated users, write for super admins)
+			categories := sops.Group("/categories")
+			{
+				categories.GET("", sopCategoryHandler.ListCategories)
+				categories.GET("/:id", sopCategoryHandler.GetCategory)
+				categories.GET("/:id/files", sopCategoryHandler.GetCategoryFiles)
+				categories.GET("/:id/files/download", sopCategoryHandler.DownloadFile)
+
+				categories.POST("", middleware.RequirePermission(models.PermDeleteUsers), sopCategoryHandler.CreateCategory)
+				categories.PUT("/:id", middleware.RequirePermission(models.PermDeleteUsers), sopCategoryHandler.UpdateCategory)
+				categories.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), sopCategoryHandler.DeleteCategory)
+			}
 		}
 	}
 
