@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"backend/internal/models"
 	"backend/internal/repository"
@@ -376,4 +377,42 @@ func (s *UserService) ListUsers(ctx context.Context, role *models.UserRole, isAc
 	}
 
 	return users, count, nil
+}
+
+// CountUsers counts users with optional filtering
+func (s *UserService) CountUsers(ctx context.Context, isActive *bool) (int64, error) {
+	filter := bson.M{}
+	if isActive != nil {
+		filter["is_active"] = *isActive
+	}
+	return s.userRepo.Count(ctx, filter)
+}
+
+// CountUsersCreatedAfter counts users created after a specific time
+func (s *UserService) CountUsersCreatedAfter(ctx context.Context, after time.Time) (int64, error) {
+	filter := bson.M{
+		"created_at": bson.M{"$gte": after},
+	}
+	return s.userRepo.Count(ctx, filter)
+}
+
+// GetRoleDistribution returns the count of users per role
+func (s *UserService) GetRoleDistribution(ctx context.Context) (map[models.UserRole]int64, error) {
+	roles := []models.UserRole{
+		models.RoleHaematologist,
+		models.RolePhysician,
+		models.RoleDataCapturer,
+		models.UserRole("admin"), // Admin role
+	}
+
+	distribution := make(map[models.UserRole]int64)
+	for _, role := range roles {
+		count, err := s.userRepo.Count(ctx, bson.M{"role": role})
+		if err != nil {
+			return nil, err
+		}
+		distribution[role] = count
+	}
+
+	return distribution, nil
 }

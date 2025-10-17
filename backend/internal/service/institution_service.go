@@ -322,3 +322,12 @@ func (s *InstitutionService) ValidateInstitutionID(ctx context.Context, id primi
 	return nil
 }
 
+// CountInstitutions counts institutions with optional filtering
+func (s *InstitutionService) CountInstitutions(ctx context.Context, isActive *bool) (int64, error) {
+	filter := bson.M{}
+	if isActive != nil {
+		filter["is_active"] = *isActive
+	}
+	return s.institutionRepo.Count(ctx, filter)
+}
+

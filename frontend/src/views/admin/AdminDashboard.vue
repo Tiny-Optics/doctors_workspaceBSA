@@ -56,17 +56,17 @@
         </div>
       </div>
 
-      <!-- System Health -->
+      <!-- Total Institutions -->
       <div class="bg-gradient-to-r from-purple-500 to-purple-700 rounded-xl p-6 text-white">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-purple-100 text-sm font-medium">System Health</p>
-            <p class="text-3xl font-bold">{{ stats.systemUptime }}%</p>
-            <p class="text-purple-100 text-sm mt-1">Uptime</p>
+            <p class="text-purple-100 text-sm font-medium">Total Institutions</p>
+            <p class="text-3xl font-bold">{{ stats.totalInstitutions }}</p>
+            <p class="text-purple-100 text-sm mt-1">Registered</p>
           </div>
           <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
         </div>
@@ -179,7 +179,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useUsersStore } from '@/stores/users'
+import { useAuthStore } from '@/stores/auth'
+import { getUserRoleDisplayName } from '@/types/user'
 
 // Icons for recent activity
 const UserIcon = {
@@ -207,25 +208,27 @@ const SettingsIcon = {
   `
 }
 
+const authStore = useAuthStore()
+
 // Stats data
 const stats = ref({
-  totalUsers: 24,
-  activeUsers: 18,
-  newUsersThisMonth: 5,
-  newUsersThisWeek: 2,
-  newUsersToday: 1,
-  systemUptime: 99.9
+  totalUsers: 0,
+  activeUsers: 0,
+  newUsersThisMonth: 0,
+  newUsersThisWeek: 0,
+  newUsersToday: 0,
+  totalInstitutions: 0
 })
 
 // Role distribution data
 const roleDistribution = ref([
-  { name: 'Haematologists', count: 8, color: '#DC2626' },
-  { name: 'Physicians', count: 6, color: '#059669' },
-  { name: 'Data Capturers', count: 7, color: '#7C3AED' },
-  { name: 'Admins', count: 3, color: '#EA580C' }
+  { name: 'Haematologists', count: 0, color: '#DC2626' },
+  { name: 'Physicians', count: 0, color: '#059669' },
+  { name: 'Data Capturers', count: 0, color: '#7C3AED' },
+  { name: 'Admins', count: 0, color: '#EA580C' }
 ])
 
-// Recent activity data
+// Recent activity data (mock for now)
 const recentActivity = ref([
   {
     id: 1,
@@ -265,8 +268,6 @@ const recentActivity = ref([
   }
 ])
 
-const usersStore = useUsersStore()
-
 const refreshStats = async () => {
   try {
     console.log('Refreshing stats...')
@@ -278,20 +279,43 @@ const refreshStats = async () => {
 
 const loadSystemStats = async () => {
   try {
-    // Load real user data to get accurate stats
-    await usersStore.fetchUsers()
-    // Get users from store state after fetch
-    const totalUsers = usersStore.users?.length || 0
-    const activeUsers = usersStore.users?.filter((user: any) => user.isActive).length || 0
+    const response = await fetch('http://localhost:8080/api/stats/admin', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    })
     
-    // Update stats with real data
+    if (!response.ok) {
+      throw new Error('Failed to fetch admin stats')
+    }
+    
+    const data = await response.json()
+    
+    // Update stats
     stats.value = {
-      ...stats.value,
-      totalUsers,
-      activeUsers,
-      newUsersThisMonth: Math.floor(totalUsers * 0.2), // 20% of total as new this month
-      newUsersThisWeek: Math.floor(totalUsers * 0.08), // 8% of total as new this week
-      newUsersToday: Math.floor(Math.random() * 3), // Random 0-2 new today
+      totalUsers: data.totalUsers || 0,
+      activeUsers: data.activeUsers || 0,
+      newUsersThisMonth: data.newUsersThisMonth || 0,
+      newUsersThisWeek: data.newUsersThisWeek || 0,
+      newUsersToday: data.newUsersToday || 0,
+      totalInstitutions: data.totalInstitutions || 0
+    }
+    
+    // Update role distribution
+    if (data.roleDistribution && Array.isArray(data.roleDistribution)) {
+      const roleMap: Record<string, { name: string; color: string }> = {
+        'haematologist': { name: 'Haematologists', color: '#DC2626' },
+        'physician': { name: 'Physicians', color: '#059669' },
+        'data_capturer': { name: 'Data Capturers', color: '#7C3AED' },
+        'admin': { name: 'Admins', color: '#EA580C' }
+      }
+      
+      roleDistribution.value = data.roleDistribution.map((item: { role: string; count: number }) => ({
+        name: roleMap[item.role]?.name || item.role,
+        count: item.count,
+        color: roleMap[item.role]?.color || '#6B7280'
+      }))
     }
   } catch (error) {
     console.error('Failed to load system stats:', error)

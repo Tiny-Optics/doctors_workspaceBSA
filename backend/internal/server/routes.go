@@ -45,6 +45,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
 	institutionHandler := handlers.NewInstitutionHandler(institutionService)
+	statsHandler := handlers.NewStatsHandler(userService, institutionService)
 
 	// API routes group
 	api := r.Group("/api")
@@ -89,6 +90,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 			institutions.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), institutionHandler.DeleteInstitution)
 			institutions.POST("/:id/activate", middleware.RequirePermission(models.PermManageUsers), institutionHandler.ActivateInstitution)
 			institutions.POST("/:id/deactivate", middleware.RequirePermission(models.PermManageUsers), institutionHandler.DeactivateInstitution)
+		}
+
+		// Stats routes (all protected)
+		stats := api.Group("/stats")
+		stats.Use(middleware.AuthMiddleware(authService))
+		{
+			stats.GET("/admin", middleware.RequirePermission(models.PermManageUsers), statsHandler.GetAdminStats)
 		}
 	}
 
