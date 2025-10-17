@@ -752,6 +752,42 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Password Reset (Optional) -->
+              <div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                  Reset Password (Optional)
+                </h4>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <p class="text-sm text-yellow-800">
+                    Leave blank to keep the current password. Fill both fields to reset the user's password.
+                  </p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                    <input
+                      v-model="editUserData.newPassword"
+                      type="password"
+                      placeholder="Enter new password"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Min 8 chars with uppercase, lowercase, number & special char</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                    <input
+                      v-model="editUserData.confirmNewPassword"
+                      type="password"
+                      placeholder="Re-enter new password"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Form Actions -->
@@ -1066,7 +1102,9 @@ const editUserData = ref({
   institutionId: '',
   specialty: '',
   registrationNumber: '',
-  phoneNumber: ''
+  phoneNumber: '',
+  newPassword: '',
+  confirmNewPassword: ''
 })
 
 // Real users data from API
@@ -1216,7 +1254,9 @@ const editUser = (user: any) => {
     institutionId: user.profile.institutionId || '',
     specialty: user.profile.specialty || '',
     registrationNumber: user.profile.registrationNumber || '',
-    phoneNumber: user.profile.phoneNumber || ''
+    phoneNumber: user.profile.phoneNumber || '',
+    newPassword: '',
+    confirmNewPassword: ''
   }
   showEditModal.value = true
   showViewModal.value = false // Close view modal if open
@@ -1239,6 +1279,20 @@ const updateUser = async () => {
     return
   }
   
+  // Validate password if provided
+  if (editUserData.value.newPassword || editUserData.value.confirmNewPassword) {
+    if (editUserData.value.newPassword !== editUserData.value.confirmNewPassword) {
+      error.value = 'Passwords do not match'
+      toast.error('New passwords do not match. Please check and try again.')
+      return
+    }
+    if (editUserData.value.newPassword.length < 8) {
+      error.value = 'Password must be at least 8 characters'
+      toast.error('Password must be at least 8 characters long.')
+      return
+    }
+  }
+  
   try {
     loading.value = true
     error.value = null
@@ -1258,6 +1312,11 @@ const updateUser = async () => {
       updateData.adminLevel = editUserData.value.adminLevel
     }
     
+    // Include password if provided
+    if (editUserData.value.newPassword) {
+      updateData.password = editUserData.value.newPassword
+    }
+    
     await usersStore.updateUser(userToEdit.value.id, updateData)
     
     // Refresh users list
@@ -1267,8 +1326,11 @@ const updateUser = async () => {
     showEditModal.value = false
     userToEdit.value = null
     
-    // Show success toast
-    toast.success(`${userName} has been successfully updated`)
+    // Show success toast with password reset confirmation if applicable
+    const successMessage = editUserData.value.newPassword 
+      ? `${userName} has been successfully updated and password reset` 
+      : `${userName} has been successfully updated`
+    toast.success(successMessage)
   } catch (err) {
     console.error('Failed to update user:', err)
     error.value = err instanceof Error ? err.message : 'Failed to update user'
