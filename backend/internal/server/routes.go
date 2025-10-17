@@ -27,6 +27,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.GET("/", s.HelloWorldHandler)
 	r.GET("/health", s.healthHandler)
 
+	// Serve static files for uploads
+	r.Static("/uploads", "./uploads")
+
 	// Get MongoDB database
 	db := s.db.GetDB()
 
@@ -121,6 +124,12 @@ func (s *Server) RegisterRoutes() http.Handler {
 				categories.PUT("/:id", middleware.RequirePermission(models.PermDeleteUsers), sopCategoryHandler.UpdateCategory)
 				categories.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), sopCategoryHandler.DeleteCategory)
 			}
+
+			// Image upload (super admin only)
+			sops.POST("/images/upload", middleware.RequirePermission(models.PermDeleteUsers), sopCategoryHandler.UploadImage)
+
+			// Seeding (super admin only)
+			sops.POST("/seed", middleware.RequirePermission(models.PermDeleteUsers), sopCategoryHandler.SeedCategories)
 		}
 	}
 

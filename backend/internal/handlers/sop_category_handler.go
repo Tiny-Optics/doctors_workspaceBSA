@@ -1,8 +1,14 @@
 package handlers
 
 import (
+	"fmt"
+	"math/rand"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"backend/internal/middleware"
 	"backend/internal/models"
@@ -348,4 +354,186 @@ func (h *SOPCategoryHandler) DownloadFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"downloadLink": downloadLink,
 	})
+}
+
+// UploadImage godoc
+// @Summary Upload category image
+// @Description Upload an image for SOP category (requires super admin permission)
+// @Tags sop-categories
+// @Accept multipart/form-data
+// @Produce json
+// @Param image formData file true "Image file (jpg, jpeg, png, webp, max 5MB)"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /sops/images/upload [post]
+// @Security BearerAuth
+func (h *SOPCategoryHandler) UploadImage(c *gin.Context) {
+	user, err := middleware.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// Check permission - only super admins can upload images
+	if !user.HasPermission(models.PermDeleteUsers) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+		return
+	}
+
+	// Get file from form
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "image file is required"})
+		return
+	}
+
+	// Validate file size (max 5MB)
+	if file.Size > 5*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "image size must be less than 5MB"})
+		return
+	}
+
+	// Validate file extension
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	validExtensions := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".webp": true,
+	}
+
+	if !validExtensions[ext] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid image format. Allowed: jpg, jpeg, png, webp"})
+		return
+	}
+
+	// Create uploads directory if it doesn't exist
+	uploadDir := "./uploads/sops"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create upload directory"})
+		return
+	}
+
+	// Generate unique filename
+	filename := fmt.Sprintf("%d_%s%s", time.Now().Unix(), generateRandomString(8), ext)
+	filePath := filepath.Join(uploadDir, filename)
+
+	// Save file
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
+		return
+	}
+
+	// Return relative path for database storage
+	imagePath := "/uploads/sops/" + filename
+
+	c.JSON(http.StatusOK, gin.H{
+		"imagePath": imagePath,
+		"message":   "image uploaded successfully",
+	})
+}
+
+// SeedCategories godoc
+// @Summary Seed initial SOP categories
+// @Description Create initial SOP categories if none exist (requires super admin permission)
+// @Tags sop-categories
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /sops/seed [post]
+// @Security BearerAuth
+func (h *SOPCategoryHandler) SeedCategories(c *gin.Context) {
+	user, err := middleware.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// Check permission - only super admins can seed
+	if !user.HasPermission(models.PermDeleteUsers) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+		return
+	}
+
+	// Check if categories already exist
+	categories, total, err := h.categoryService.ListCategories(c.Request.Context(), user, "", 1, 1)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check existing categories"})
+		return
+	}
+
+	if total > 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"message":    "categories already exist",
+			"count":      total,
+			"categories": categories,
+		})
+		return
+	}
+
+	ipAddress := middleware.GetIPAddress(c)
+
+	// Seed initial categories
+	seedData := []struct {
+		name         string
+		description  string
+		displayOrder int
+	}{
+		{
+			name:         "Anemia",
+			description:  "Standard operating procedures for anemia diagnosis and treatment",
+			displayOrder: 1,
+		},
+		{
+			name:         "Lymphoma",
+			description:  "Standard operating procedures for lymphoma management",
+			displayOrder: 2,
+		},
+		{
+			name:         "Myeloma",
+			description:  "Standard operating procedures for multiple myeloma treatment",
+			displayOrder: 3,
+		},
+		{
+			name:         "General Business",
+			description:  "General business procedures and administrative guidelines",
+			displayOrder: 4,
+		},
+	}
+
+	createdCategories := make([]interface{}, 0)
+
+	for _, data := range seedData {
+		req := &models.CreateSOPCategoryRequest{
+			Name:         data.name,
+			Description:  data.description,
+			DisplayOrder: data.displayOrder,
+		}
+
+		category, err := h.categoryService.CreateCategory(c.Request.Context(), req, user, ipAddress)
+		if err != nil {
+			// Log error but continue with other categories
+			continue
+		}
+		createdCategories = append(createdCategories, category)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "categories seeded successfully",
+		"count":      len(createdCategories),
+		"categories": createdCategories,
+	})
+}
+
+// Helper function to generate random string
+func generateRandomString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
 }

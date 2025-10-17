@@ -132,6 +132,24 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
           
+          <!-- SOP Management Icon -->
+          <svg 
+            v-else-if="item.name === 'SOP Management'"
+            class="flex-shrink-0 transition-colors duration-200"
+            :class="[
+              isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
+              { 
+                'text-white': $route.path === item.to,
+                'text-gray-600 group-hover:text-white': $route.path !== item.to
+              }
+            ]"
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          
           <!-- Audit Logs Icon -->
           <svg 
             v-else-if="item.name === 'Audit Logs'"
@@ -147,7 +165,7 @@
             stroke="currentColor" 
             viewBox="0 0 24 24"
           >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
           <span v-if="!isCollapsed" class="font-medium whitespace-nowrap">{{ item.name }}</span>
           
@@ -215,6 +233,10 @@ const navigationItems = [
   {
     name: 'Institution Management',
     to: '/admin/institutions'
+  },
+  {
+    name: 'SOP Management',
+    to: '/admin/sops'
   },
   {
     name: 'System Settings',

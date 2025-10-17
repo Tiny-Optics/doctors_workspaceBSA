@@ -89,12 +89,16 @@ func (s *SOPCategoryService) CreateCategory(
 
 	// Create folder in Dropbox
 	if s.dropboxService.IsConfigured() {
+		fmt.Printf("Attempting to create Dropbox folder at path: %s\n", category.DropboxPath)
 		err := s.dropboxService.CreateFolder(category.DropboxPath)
 		if err != nil {
 			// Log the error but don't fail the category creation
-			// In production, you'd want proper logging here
-			fmt.Printf("Warning: Failed to create Dropbox folder for category %s: %v\n", category.Name, err)
+			fmt.Printf("ERROR: Failed to create Dropbox folder for category '%s' at path '%s': %v\n", category.Name, category.DropboxPath, err)
+		} else {
+			fmt.Printf("SUCCESS: Created Dropbox folder for category '%s' at path '%s'\n", category.Name, category.DropboxPath)
 		}
+	} else {
+		fmt.Printf("WARNING: Dropbox is not configured - skipping folder creation for category '%s'\n", category.Name)
 	}
 
 	// Create category in database

@@ -33,7 +33,7 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/sops/:disease',
+      path: '/sops/:slug',
       name: 'sops-list',
       component: () => import('../views/sops/SOPList.vue'),
       meta: { requiresAuth: true }
@@ -110,6 +110,11 @@ const router = createRouter({
           path: 'audit-logs',
           name: 'admin-audit-logs',
           component: () => import('../views/admin/AuditLogs.vue')
+        },
+        {
+          path: 'sops',
+          name: 'admin-sops',
+          component: () => import('../views/admin/SOPManagement.vue')
         }
       ]
     }

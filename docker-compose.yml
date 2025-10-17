@@ -39,6 +39,7 @@ services:
       - ./backend:/app
       - /app/tmp
       - go_modules:/go/pkg/mod
+      - sop_uploads:/app/uploads
     networks:
       - bloodsa_network
     depends_on:
@@ -75,6 +76,8 @@ volumes:
   mongo_data:
     driver: local
   go_modules:
+    driver: local
+  sop_uploads:
     driver: local
 
 
