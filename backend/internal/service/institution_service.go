@@ -66,11 +66,13 @@ func (s *InstitutionService) CreateInstitution(ctx context.Context, req *models.
 	// Log audit
 	s.auditRepo.Create(ctx, &models.AuditLog{
 		PerformedBy: &createdBy.ID,
-		Action:      models.AuditActionUserCreated, // TODO: Add AuditActionInstitutionCreated
+		Action:      models.AuditActionInstitutionCreated,
 		IPAddress:   ipAddress,
 		Details: map[string]interface{}{
-			"institution_id":   institution.ID,
+			"institution_id":   institution.ID.Hex(),
 			"institution_name": institution.Name,
+			"type":             string(institution.Type),
+			"city":             institution.City,
 		},
 	})
 
@@ -158,10 +160,10 @@ func (s *InstitutionService) UpdateInstitution(ctx context.Context, id primitive
 	// Log audit
 	s.auditRepo.Create(ctx, &models.AuditLog{
 		PerformedBy: &updatedBy.ID,
-		Action:      models.AuditActionUserUpdated, // TODO: Add AuditActionInstitutionUpdated
+		Action:      models.AuditActionInstitutionUpdated,
 		IPAddress:   ipAddress,
 		Details: map[string]interface{}{
-			"institution_id":   id,
+			"institution_id":   id.Hex(),
 			"institution_name": institution.Name,
 			"updated_fields":   update,
 		},
@@ -199,11 +201,13 @@ func (s *InstitutionService) DeleteInstitution(ctx context.Context, id primitive
 	// Log audit
 	s.auditRepo.Create(ctx, &models.AuditLog{
 		PerformedBy: &deletedBy.ID,
-		Action:      models.AuditActionUserDeleted, // TODO: Add AuditActionInstitutionDeleted
+		Action:      models.AuditActionInstitutionDeleted,
 		IPAddress:   ipAddress,
 		Details: map[string]interface{}{
-			"institution_id":   id,
+			"institution_id":   id.Hex(),
 			"institution_name": institution.Name,
+			"type":             string(institution.Type),
+			"city":             institution.City,
 		},
 	})
 
@@ -229,10 +233,10 @@ func (s *InstitutionService) ActivateInstitution(ctx context.Context, id primiti
 	// Log audit
 	s.auditRepo.Create(ctx, &models.AuditLog{
 		PerformedBy: &activatedBy.ID,
-		Action:      models.AuditActionUserActivated, // TODO: Add AuditActionInstitutionActivated
+		Action:      models.AuditActionInstitutionActivated,
 		IPAddress:   ipAddress,
 		Details: map[string]interface{}{
-			"institution_id":   id,
+			"institution_id":   id.Hex(),
 			"institution_name": institution.Name,
 		},
 	})
@@ -259,10 +263,10 @@ func (s *InstitutionService) DeactivateInstitution(ctx context.Context, id primi
 	// Log audit
 	s.auditRepo.Create(ctx, &models.AuditLog{
 		PerformedBy: &deactivatedBy.ID,
-		Action:      models.AuditActionUserDeactivated, // TODO: Add AuditActionInstitutionDeactivated
+		Action:      models.AuditActionInstitutionDeactivated,
 		IPAddress:   ipAddress,
 		Details: map[string]interface{}{
-			"institution_id":   id,
+			"institution_id":   id.Hex(),
 			"institution_name": institution.Name,
 		},
 	})

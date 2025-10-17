@@ -10,19 +10,24 @@ import (
 type AuditAction string
 
 const (
-	AuditActionUserCreated       AuditAction = "user_created"
-	AuditActionUserUpdated       AuditAction = "user_updated"
-	AuditActionUserDeleted       AuditAction = "user_deleted"
-	AuditActionUserDeactivated   AuditAction = "user_deactivated"
-	AuditActionUserActivated     AuditAction = "user_activated"
-	AuditActionRoleChanged       AuditAction = "role_changed"
-	AuditActionAdminLevelChanged AuditAction = "admin_level_changed"
-	AuditActionLoginSuccess      AuditAction = "login_success"
-	AuditActionLoginFailed       AuditAction = "login_failed"
-	AuditActionLogout            AuditAction = "logout"
-	AuditActionPasswordChanged   AuditAction = "password_changed"
-	AuditActionAccountLocked     AuditAction = "account_locked"
-	AuditActionAccountUnlocked   AuditAction = "account_unlocked"
+	AuditActionUserCreated             AuditAction = "user_created"
+	AuditActionUserUpdated             AuditAction = "user_updated"
+	AuditActionUserDeleted             AuditAction = "user_deleted"
+	AuditActionUserDeactivated         AuditAction = "user_deactivated"
+	AuditActionUserActivated           AuditAction = "user_activated"
+	AuditActionRoleChanged             AuditAction = "role_changed"
+	AuditActionAdminLevelChanged       AuditAction = "admin_level_changed"
+	AuditActionLoginSuccess            AuditAction = "login_success"
+	AuditActionLoginFailed             AuditAction = "login_failed"
+	AuditActionLogout                  AuditAction = "logout"
+	AuditActionPasswordChanged         AuditAction = "password_changed"
+	AuditActionAccountLocked           AuditAction = "account_locked"
+	AuditActionAccountUnlocked         AuditAction = "account_unlocked"
+	AuditActionInstitutionCreated      AuditAction = "institution_created"
+	AuditActionInstitutionUpdated      AuditAction = "institution_updated"
+	AuditActionInstitutionDeleted      AuditAction = "institution_deleted"
+	AuditActionInstitutionActivated    AuditAction = "institution_activated"
+	AuditActionInstitutionDeactivated  AuditAction = "institution_deactivated"
 )
 
 // AuditLog represents a log entry for audit trail

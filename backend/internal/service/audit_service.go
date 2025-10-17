@@ -27,14 +27,14 @@ func NewAuditService(auditRepo *repository.AuditRepository, userRepo *repository
 
 // RecentActivityItem represents a recent activity entry with enriched data
 type RecentActivityItem struct {
-	ID          string                 `json:"id"`
-	Action      string                 `json:"action"`
-	Title       string                 `json:"title"`
-	Description string                 `json:"description"`
-	Time        string                 `json:"time"`
-	Icon        string                 `json:"icon"`
-	IconBg      string                 `json:"iconBg"`
-	IconColor   string                 `json:"iconColor"`
+	ID          string `json:"id"`
+	Action      string `json:"action"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Time        string `json:"time"`
+	Icon        string `json:"icon"`
+	IconBg      string `json:"iconBg"`
+	IconColor   string `json:"iconColor"`
 }
 
 // GetRecentActivity retrieves recent activity with user information
@@ -62,13 +62,19 @@ func (s *AuditService) enrichAuditLog(ctx context.Context, log *models.AuditLog)
 		Time:   formatTimeAgo(log.Timestamp),
 	}
 
-	// Get user information if available
+	// Get user information - try from database first, then from details
 	var userName string
 	if log.UserID != nil {
 		user, err := s.userRepo.FindByID(ctx, *log.UserID)
 		if err == nil && user != nil {
 			userName = user.Profile.FirstName + " " + user.Profile.LastName
+		} else {
+			// User not found (deleted), try to get name from details
+			userName = s.getUserNameFromDetails(log.Details)
 		}
+	} else {
+		// No user ID, try to get name from details
+		userName = s.getUserNameFromDetails(log.Details)
 	}
 
 	// Get performer information if available
@@ -123,7 +129,13 @@ func (s *AuditService) enrichAuditLog(ctx context.Context, log *models.AuditLog)
 
 	case models.AuditActionUserDeleted:
 		activity.Title = "User deleted"
-		activity.Description = userName + " was removed from the system"
+		role := s.getRoleFromDetails(log.Details)
+		email := s.getEmailFromDetails(log.Details)
+		if email != "" {
+			activity.Description = userName + " (" + email + ") - " + role + " - was removed from the system"
+		} else {
+			activity.Description = userName + " (" + role + ") was removed from the system"
+		}
 		activity.Icon = "trash"
 		activity.IconBg = "bg-red-100"
 		activity.IconColor = "text-red-600"
@@ -142,6 +154,51 @@ func (s *AuditService) enrichAuditLog(ctx context.Context, log *models.AuditLog)
 		activity.IconBg = "bg-orange-100"
 		activity.IconColor = "text-orange-600"
 
+	// Institution actions
+	case models.AuditActionInstitutionCreated:
+		institutionName := s.getInstitutionNameFromDetails(log.Details)
+		institutionType := s.getInstitutionTypeFromDetails(log.Details)
+		city := s.getCityFromDetails(log.Details)
+		activity.Title = "New institution created"
+		activity.Description = institutionName + " (" + institutionType + ") in " + city + " was added"
+		activity.Icon = "user-plus"
+		activity.IconBg = "bg-green-100"
+		activity.IconColor = "text-green-600"
+
+	case models.AuditActionInstitutionUpdated:
+		institutionName := s.getInstitutionNameFromDetails(log.Details)
+		activity.Title = "Institution updated"
+		activity.Description = institutionName + " details were updated"
+		activity.Icon = "settings"
+		activity.IconBg = "bg-purple-100"
+		activity.IconColor = "text-purple-600"
+
+	case models.AuditActionInstitutionDeleted:
+		institutionName := s.getInstitutionNameFromDetails(log.Details)
+		institutionType := s.getInstitutionTypeFromDetails(log.Details)
+		city := s.getCityFromDetails(log.Details)
+		activity.Title = "Institution deleted"
+		activity.Description = institutionName + " (" + institutionType + ") in " + city + " was removed"
+		activity.Icon = "trash"
+		activity.IconBg = "bg-red-100"
+		activity.IconColor = "text-red-600"
+
+	case models.AuditActionInstitutionActivated:
+		institutionName := s.getInstitutionNameFromDetails(log.Details)
+		activity.Title = "Institution activated"
+		activity.Description = institutionName + " was activated"
+		activity.Icon = "user-check"
+		activity.IconBg = "bg-green-100"
+		activity.IconColor = "text-green-600"
+
+	case models.AuditActionInstitutionDeactivated:
+		institutionName := s.getInstitutionNameFromDetails(log.Details)
+		activity.Title = "Institution deactivated"
+		activity.Description = institutionName + " was deactivated"
+		activity.Icon = "user-x"
+		activity.IconBg = "bg-red-100"
+		activity.IconColor = "text-red-600"
+
 	default:
 		activity.Title = "System activity"
 		activity.Description = string(log.Action)
@@ -151,6 +208,44 @@ func (s *AuditService) enrichAuditLog(ctx context.Context, log *models.AuditLog)
 	}
 
 	return activity
+}
+
+// getUserNameFromDetails extracts user name from audit log details
+func (s *AuditService) getUserNameFromDetails(details map[string]interface{}) string {
+	if details == nil {
+		return "Unknown User"
+	}
+
+	// Try to get first_name and last_name
+	firstName, firstOk := details["first_name"].(string)
+	lastName, lastOk := details["last_name"].(string)
+	
+	if firstOk && lastOk {
+		return firstName + " " + lastName
+	}
+
+	// Try email as fallback
+	if email, ok := details["email"].(string); ok {
+		return email
+	}
+
+	// Try username as fallback
+	if username, ok := details["username"].(string); ok {
+		return username
+	}
+
+	return "Unknown User"
+}
+
+// getEmailFromDetails extracts email from audit log details
+func (s *AuditService) getEmailFromDetails(details map[string]interface{}) string {
+	if details == nil {
+		return ""
+	}
+	if email, ok := details["email"].(string); ok {
+		return email
+	}
+	return ""
 }
 
 // getRoleFromDetails extracts role from audit log details
@@ -170,6 +265,58 @@ func (s *AuditService) getRoleFromDetails(details map[string]interface{}) string
 		}
 	}
 	return "User"
+}
+
+// getInstitutionNameFromDetails extracts institution name from audit log details
+func (s *AuditService) getInstitutionNameFromDetails(details map[string]interface{}) string {
+	if details == nil {
+		return "Unknown Institution"
+	}
+	if name, ok := details["institution_name"].(string); ok {
+		return name
+	}
+	return "Unknown Institution"
+}
+
+// getInstitutionTypeFromDetails extracts institution type from audit log details
+func (s *AuditService) getInstitutionTypeFromDetails(details map[string]interface{}) string {
+	if details == nil {
+		return "Institution"
+	}
+	if instType, ok := details["type"].(string); ok {
+		switch instType {
+		case "university":
+			return "University"
+		case "hospital":
+			return "Hospital"
+		case "laboratory":
+			return "Laboratory"
+		case "research_center":
+			return "Research Center"
+		case "government":
+			return "Government"
+		case "private_practice":
+			return "Private Practice"
+		case "ngo":
+			return "NGO"
+		case "other":
+			return "Other"
+		default:
+			return instType
+		}
+	}
+	return "Institution"
+}
+
+// getCityFromDetails extracts city from audit log details
+func (s *AuditService) getCityFromDetails(details map[string]interface{}) string {
+	if details == nil {
+		return "Unknown City"
+	}
+	if city, ok := details["city"].(string); ok {
+		return city
+	}
+	return "Unknown City"
 }
 
 // formatTimeAgo formats a time.Time as a relative time string
@@ -211,4 +358,3 @@ func formatTimeAgo(t time.Time) string {
 		return fmt.Sprintf("%d months ago", months)
 	}
 }
-

@@ -249,8 +249,11 @@ func (s *UserService) DeleteUser(ctx context.Context, userID primitive.ObjectID,
 		Action:      models.AuditActionUserDeleted,
 		IPAddress:   ipAddress,
 		Details: map[string]interface{}{
-			"username": targetUser.Username,
-			"email":    targetUser.Email,
+			"username":   targetUser.Username,
+			"email":      targetUser.Email,
+			"first_name": targetUser.Profile.FirstName,
+			"last_name":  targetUser.Profile.LastName,
+			"role":       string(targetUser.Role),
 		},
 	})
 
