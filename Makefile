@@ -1,6 +1,6 @@
 # Makefile for BLOODSA Doctor's Workspace
 
-.PHONY: help dev prod build start stop restart logs clean backup
+.PHONY: help dev cloudways build start stop restart logs clean backup
 
 # Default target
 help:
@@ -11,13 +11,12 @@ help:
 	@echo "  make dev-logs     - View development logs"
 	@echo "  make dev-stop     - Stop development environment"
 	@echo ""
-	@echo "Production:"
-	@echo "  make prod         - Deploy production environment"
-	@echo "  make prod-build   - Build production images"
-	@echo "  make prod-start   - Start production containers"
-	@echo "  make prod-stop    - Stop production containers"
-	@echo "  make prod-restart - Restart production containers"
-	@echo "  make prod-logs    - View production logs"
+	@echo "Production (Cloudways Shared Hosting):"
+	@echo "  make cloudways        - Deploy on Cloudways shared server"
+	@echo "  make cloudways-logs   - View deployment logs"
+	@echo "  make cloudways-stop   - Stop deployment"
+	@echo "  make cloudways-restart- Restart containers"
+	@echo "  make cloudways-ps     - Check container status"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make backup       - Backup database and uploads"
@@ -38,47 +37,41 @@ dev-logs:
 dev-stop:
 	docker compose down
 
-# Production commands
-prod:
-	@echo "Deploying production environment..."
-	@chmod +x deploy.sh
-	@./deploy.sh
+# Cloudways commands (Production)
+cloudways:
+	@echo "Deploying to Cloudways shared server..."
+	@chmod +x deploy-cloudways.sh
+	@./deploy-cloudways.sh
 
-prod-build:
-	docker compose -f docker-compose.prod.yml build --no-cache
+cloudways-logs:
+	docker compose -f docker-compose.cloudways.yml --env-file .env.cloudways logs -f
 
-prod-start:
-	docker compose -f docker-compose.prod.yml up -d
+cloudways-stop:
+	docker compose -f docker-compose.cloudways.yml down
 
-prod-stop:
-	docker compose -f docker-compose.prod.yml down
+cloudways-restart:
+	docker compose -f docker-compose.cloudways.yml --env-file .env.cloudways restart
 
-prod-restart:
-	docker compose -f docker-compose.prod.yml restart
-
-prod-logs:
-	docker compose -f docker-compose.prod.yml logs -f
-
-prod-ps:
-	docker compose -f docker-compose.prod.yml ps
+cloudways-ps:
+	docker compose -f docker-compose.cloudways.yml ps
 
 # Update application
 update:
 	@echo "Pulling latest changes..."
 	git pull origin main
 	@echo "Rebuilding containers..."
-	docker compose -f docker-compose.prod.yml build
+	docker compose -f docker-compose.cloudways.yml --env-file .env.cloudways build
 	@echo "Restarting services..."
-	docker compose -f docker-compose.prod.yml up -d
+	docker compose -f docker-compose.cloudways.yml --env-file .env.cloudways up -d
 	@echo "Update complete!"
 
 # Backup
 backup:
 	@echo "Creating backup..."
 	@mkdir -p backups
-	@docker exec bloodsa_mongodb_prod mongodump --out=/dump
-	@docker cp bloodsa_mongodb_prod:/dump ./backups/mongo_$(shell date +%Y%m%d_%H%M%S)
-	@docker run --rm -v sop_uploads:/data -v $(PWD)/backups:/backup alpine tar czf /backup/uploads_$(shell date +%Y%m%d_%H%M%S).tar.gz /data
+	@docker exec bloodsa_doctors_mongodb mongodump --out=/dump
+	@docker cp bloodsa_doctors_mongodb:/dump ./backups/mongo_$(shell date +%Y%m%d_%H%M%S)
+	@docker run --rm -v bloodsa_doctors_sop_uploads:/data -v $(PWD)/backups:/backup alpine tar czf /backup/uploads_$(shell date +%Y%m%d_%H%M%S).tar.gz /data
 	@echo "Backup created in ./backups/"
 
 # Clean (WARNING: Deletes all data!)
@@ -87,7 +80,7 @@ clean:
 	@read -p "Are you sure? (yes/no): " confirm; \
 	if [ "$$confirm" = "yes" ]; then \
 		docker compose down -v; \
-		docker compose -f docker-compose.prod.yml down -v; \
+		docker compose -f docker-compose.cloudways.yml down -v; \
 		docker system prune -af; \
 		echo "Cleanup complete"; \
 	else \
@@ -96,12 +89,12 @@ clean:
 
 # Database shell
 db-shell:
-	docker exec -it bloodsa_mongodb_prod mongosh -u ${BLUEPRINT_DB_USERNAME} -p ${BLUEPRINT_DB_ROOT_PASSWORD}
+	docker exec -it bloodsa_doctors_mongodb mongosh -u ${BLUEPRINT_DB_USERNAME} -p ${BLUEPRINT_DB_ROOT_PASSWORD}
 
 # Backend shell
 backend-shell:
-	docker exec -it bloodsa_backend_prod sh
+	docker exec -it bloodsa_doctors_backend sh
 
 # Frontend shell
 frontend-shell:
-	docker exec -it bloodsa_frontend_prod sh
+	docker exec -it bloodsa_doctors_frontend sh

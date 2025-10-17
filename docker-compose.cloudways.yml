@@ -1,0 +1,148 @@
+version: '3.8'
+
+# IMPORTANT: This is configured for Cloudways shared hosting
+# All containers are isolated and use custom ports to avoid conflicts
+
+services:
+  # MongoDB Database - Internal only, no external port exposure
+  mongodb:
+    image: mongo:7.0
+    container_name: bloodsa_doctors_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${BLUEPRINT_DB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${BLUEPRINT_DB_ROOT_PASSWORD}
+    volumes:
+      - bloodsa_mongo_data:/data/db
+      - bloodsa_mongo_config:/data/configdb
+    networks:
+      - bloodsa_isolated_network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    # Resource limits to prevent hogging shared resources
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'  # Half core max
+          memory: 512M  # 512 MB max
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"  # Smaller logs for shared environment
+        max-file: "2"
+
+  # Backend API - Exposed on custom port only
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    image: bloodsa/doctors-backend:latest
+    container_name: bloodsa_doctors_backend
+    restart: unless-stopped
+    # CUSTOM PORT - Change if conflicts with other apps
+    # Cloudways will proxy to this port
+    ports:
+      - "${BLOODSA_BACKEND_PORT:-8880}:8080"
+    environment:
+      - PORT=8080
+      - APP_ENV=production
+      - GIN_MODE=release
+      - BLUEPRINT_DB_HOST=mongodb
+      - BLUEPRINT_DB_PORT=27017
+      - BLUEPRINT_DB_USERNAME=${BLUEPRINT_DB_USERNAME}
+      - BLUEPRINT_DB_ROOT_PASSWORD=${BLUEPRINT_DB_ROOT_PASSWORD}
+      - BLUEPRINT_DB_DATABASE=${BLUEPRINT_DB_DATABASE:-doctors_workspace}
+      - JWT_SECRET=${JWT_SECRET}
+      - DROPBOX_APP_API_ACCESS_TOKEN=${DROPBOX_APP_API_ACCESS_TOKEN}
+      - DROPBOX_APP_KEY=${DROPBOX_APP_KEY}
+      - DROPBOX_APP_SECRET=${DROPBOX_APP_SECRET}
+      - DROPBOX_APP_PARENT_FOLDER=${DROPBOX_APP_PARENT_FOLDER}
+    volumes:
+      - bloodsa_sop_uploads:/app/uploads
+    networks:
+      - bloodsa_isolated_network
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Conservative resource limits for shared hosting
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Frontend - Static build served by Cloudways' web server
+  # This container is OPTIONAL - you can serve the built files directly via Cloudways
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    image: bloodsa/doctors-frontend:latest
+    container_name: bloodsa_doctors_frontend
+    restart: unless-stopped
+    # CUSTOM PORT - Change if conflicts
+    ports:
+      - "${BLOODSA_FRONTEND_PORT:-8881}:80"
+    networks:
+      - bloodsa_isolated_network
+    depends_on:
+      - backend
+    # Minimal resources for serving static files
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+# ISOLATED NETWORK - Prevents interference with other apps
+networks:
+  bloodsa_isolated_network:
+    name: bloodsa_doctors_workspace_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16  # Unique subnet to avoid conflicts
+
+# NAMED VOLUMES - Prefixed to avoid conflicts
+volumes:
+  bloodsa_mongo_data:
+    name: bloodsa_doctors_mongo_data
+    driver: local
+  bloodsa_mongo_config:
+    name: bloodsa_doctors_mongo_config
+    driver: local
+  bloodsa_sop_uploads:
+    name: bloodsa_doctors_sop_uploads
+    driver: local
+
