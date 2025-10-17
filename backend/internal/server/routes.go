@@ -40,12 +40,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
 	institutionService := service.NewInstitutionService(institutionRepo, userRepo, auditRepo)
 	userService := service.NewUserService(userRepo, auditRepo, authService)
+	auditService := service.NewAuditService(auditRepo, userRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
 	institutionHandler := handlers.NewInstitutionHandler(institutionService)
-	statsHandler := handlers.NewStatsHandler(userService, institutionService)
+	statsHandler := handlers.NewStatsHandler(userService, institutionService, auditService)
 
 	// API routes group
 	api := r.Group("/api")
@@ -97,6 +98,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		stats.Use(middleware.AuthMiddleware(authService))
 		{
 			stats.GET("/admin", middleware.RequirePermission(models.PermManageUsers), statsHandler.GetAdminStats)
+			stats.GET("/recent-activity", middleware.RequirePermission(models.PermManageUsers), statsHandler.GetRecentActivity)
 		}
 	}
 

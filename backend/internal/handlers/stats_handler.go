@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"backend/internal/middleware"
@@ -15,13 +16,15 @@ import (
 type StatsHandler struct {
 	userService        *service.UserService
 	institutionService *service.InstitutionService
+	auditService       *service.AuditService
 }
 
 // NewStatsHandler creates a new StatsHandler
-func NewStatsHandler(userService *service.UserService, institutionService *service.InstitutionService) *StatsHandler {
+func NewStatsHandler(userService *service.UserService, institutionService *service.InstitutionService, auditService *service.AuditService) *StatsHandler {
 	return &StatsHandler{
 		userService:        userService,
 		institutionService: institutionService,
+		auditService:       auditService,
 	}
 }
 
@@ -142,5 +145,47 @@ func (h *StatsHandler) GetAdminStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// GetRecentActivity godoc
+// @Summary Get recent activity
+// @Description Get recent activity/audit logs for admin dashboard
+// @Tags stats
+// @Produce json
+// @Param limit query int false "Limit number of results" default(10)
+// @Success 200 {array} service.RecentActivityItem
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /stats/recent-activity [get]
+// @Security BearerAuth
+func (h *StatsHandler) GetRecentActivity(c *gin.Context) {
+	user, err := middleware.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// Only admins can access this endpoint
+	if !user.HasPermission(models.PermManageUsers) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+		return
+	}
+
+	// Get limit from query params (default 10)
+	limit := int64(10)
+	if limitParam := c.Query("limit"); limitParam != "" {
+		if l, err := strconv.ParseInt(limitParam, 10, 64); err == nil && l > 0 {
+			limit = l
+		}
+	}
+
+	ctx := c.Request.Context()
+	activities, err := h.auditService.GetRecentActivity(ctx, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get recent activity"})
+		return
+	}
+
+	c.JSON(http.StatusOK, activities)
 }
 
