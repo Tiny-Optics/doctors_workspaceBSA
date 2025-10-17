@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+.env.production
 
 # Go
 # Binaries for programs and plugins
@@ -66,3 +67,14 @@ Thumbs.db
 .nvmrc
 
 canvafiles/
+
+# Production/Deployment
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+backups/
+*.tar.gz
+
+# Uploaded images (managed by Docker volume)
+backend/uploads/*
+!backend/uploads/sops/.gitkeep

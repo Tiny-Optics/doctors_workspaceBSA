@@ -1,39 +1,24 @@
-# Ignore build artifacts
-main
+# Ignore development files
 tmp/
-*.exe
-*.out
+.air.toml
+*.md
 
 # Ignore test files
 *_test.go
 testdata/
 
-# Ignore development files
-.env
-.env.local
-.air.toml
-
-# Ignore version control
+# Ignore git
 .git/
 .gitignore
-
-# Ignore documentation
-README.md
-*.md
 
 # Ignore IDE files
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
 
-# Ignore OS files
-.DS_Store
-Thumbs.db
+# Ignore env files (use build args instead)
+.env
+.env.*
 
-# Ignore docker files
-Dockerfile*
-docker-compose*.yml
-
-
+# Ignore uploads (use volumes)
+uploads/*
+!uploads/sops/.gitkeep

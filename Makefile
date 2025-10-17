@@ -1,153 +1,107 @@
 # Makefile for BLOODSA Doctor's Workspace
 
-.PHONY: help dev prod build up down logs clean restart
+.PHONY: help dev prod build start stop restart logs clean backup
 
-# Colors for output
-BLUE := \033[0;34m
-GREEN := \033[0;32m
-YELLOW := \033[1;33m
-NC := \033[0m # No Color
-
-help: ## Show this help message
-	@echo "$(BLUE)BLOODSA Doctor's Workspace - Docker Commands$(NC)"
+# Default target
+help:
+	@echo "BLOODSA Doctor's Workspace - Make Commands"
 	@echo ""
-	@echo "$(GREEN)Usage:$(NC)"
-	@echo "  make [target]"
+	@echo "Development:"
+	@echo "  make dev          - Start development environment"
+	@echo "  make dev-logs     - View development logs"
+	@echo "  make dev-stop     - Stop development environment"
 	@echo ""
-	@echo "$(GREEN)Development Targets:$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-15s$(NC) %s\n", $$1, $$2}'
+	@echo "Production:"
+	@echo "  make prod         - Deploy production environment"
+	@echo "  make prod-build   - Build production images"
+	@echo "  make prod-start   - Start production containers"
+	@echo "  make prod-stop    - Stop production containers"
+	@echo "  make prod-restart - Restart production containers"
+	@echo "  make prod-logs    - View production logs"
+	@echo ""
+	@echo "Maintenance:"
+	@echo "  make backup       - Backup database and uploads"
+	@echo "  make clean        - Remove all containers and volumes (WARNING: deletes data!)"
+	@echo "  make update       - Pull latest code and rebuild"
+	@echo ""
 
-# Development Commands
-dev: ## Start all services in development mode
-	@echo "$(BLUE)Starting development environment...$(NC)"
-	docker compose up
-
-dev-build: ## Build and start development services
-	@echo "$(BLUE)Building and starting development environment...$(NC)"
-	docker compose up --build
-
-dev-detach: ## Start development services in background
-	@echo "$(BLUE)Starting development environment in background...$(NC)"
+# Development commands
+dev:
 	docker compose up -d
+	@echo "Development environment started"
+	@echo "Frontend: http://localhost:5173"
+	@echo "Backend:  http://localhost:8080"
 
-# Production Commands
-prod: ## Start all services in production mode
-	@echo "$(BLUE)Starting production environment...$(NC)"
-	docker compose -f docker-compose.prod.yml up -d
-
-prod-build: ## Build and start production services
-	@echo "$(BLUE)Building and starting production environment...$(NC)"
-	docker compose -f docker-compose.prod.yml up -d --build
-
-prod-down: ## Stop production services
-	@echo "$(BLUE)Stopping production environment...$(NC)"
-	docker compose -f docker-compose.prod.yml down
-
-# General Commands
-build: ## Build all development images
-	@echo "$(BLUE)Building development images...$(NC)"
-	docker compose build
-
-up: dev-detach ## Alias for dev-detach
-
-down: ## Stop all development services
-	@echo "$(BLUE)Stopping development environment...$(NC)"
-	docker compose down
-
-restart: ## Restart all development services
-	@echo "$(BLUE)Restarting development environment...$(NC)"
-	docker compose restart
-
-# Logs
-logs: ## View logs from all services
+dev-logs:
 	docker compose logs -f
 
-logs-backend: ## View backend logs
-	docker compose logs -f backend
+dev-stop:
+	docker compose down
 
-logs-frontend: ## View frontend logs
-	docker compose logs -f frontend
+# Production commands
+prod:
+	@echo "Deploying production environment..."
+	@chmod +x deploy.sh
+	@./deploy.sh
 
-logs-db: ## View database logs
-	docker compose logs -f mongodb
+prod-build:
+	docker compose -f docker-compose.prod.yml build --no-cache
 
-# Individual Service Control
-backend-restart: ## Restart backend service
-	docker compose restart backend
+prod-start:
+	docker compose -f docker-compose.prod.yml up -d
 
-frontend-restart: ## Restart frontend service
-	docker compose restart frontend
+prod-stop:
+	docker compose -f docker-compose.prod.yml down
 
-db-restart: ## Restart database service
-	docker compose restart mongodb
+prod-restart:
+	docker compose -f docker-compose.prod.yml restart
 
-# Shell Access
-shell-backend: ## Access backend container shell
-	docker compose exec backend sh
+prod-logs:
+	docker compose -f docker-compose.prod.yml logs -f
 
-shell-frontend: ## Access frontend container shell
-	docker compose exec frontend sh
+prod-ps:
+	docker compose -f docker-compose.prod.yml ps
 
-shell-db: ## Access MongoDB shell
-	docker compose exec mongodb mongosh -u $${BLUEPRINT_DB_USERNAME:-melkey} -p $${BLUEPRINT_DB_ROOT_PASSWORD:-password1234}
+# Update application
+update:
+	@echo "Pulling latest changes..."
+	git pull origin main
+	@echo "Rebuilding containers..."
+	docker compose -f docker-compose.prod.yml build
+	@echo "Restarting services..."
+	docker compose -f docker-compose.prod.yml up -d
+	@echo "Update complete!"
 
-# Testing
-test-backend: ## Run backend tests in container
-	docker compose exec backend go test ./...
+# Backup
+backup:
+	@echo "Creating backup..."
+	@mkdir -p backups
+	@docker exec bloodsa_mongodb_prod mongodump --out=/dump
+	@docker cp bloodsa_mongodb_prod:/dump ./backups/mongo_$(shell date +%Y%m%d_%H%M%S)
+	@docker run --rm -v sop_uploads:/data -v $(PWD)/backups:/backup alpine tar czf /backup/uploads_$(shell date +%Y%m%d_%H%M%S).tar.gz /data
+	@echo "Backup created in ./backups/"
 
-test-frontend: ## Run frontend tests in container
-	docker compose exec frontend npm test
-
-# Cleanup
-clean: ## Remove containers, networks, and volumes
-	@echo "$(YELLOW)Warning: This will remove all containers, networks, and volumes!$(NC)"
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo "$(BLUE)Cleaning up...$(NC)"; \
+# Clean (WARNING: Deletes all data!)
+clean:
+	@echo "WARNING: This will delete all containers and data!"
+	@read -p "Are you sure? (yes/no): " confirm; \
+	if [ "$$confirm" = "yes" ]; then \
 		docker compose down -v; \
-	fi
-
-clean-force: ## Force remove everything without confirmation
-	@echo "$(BLUE)Force cleaning...$(NC)"
-	docker compose down -v
-
-prune: ## Remove all unused Docker resources
-	@echo "$(YELLOW)Warning: This will remove all unused Docker resources!$(NC)"
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		echo "$(BLUE)Pruning Docker system...$(NC)"; \
-		docker system prune -a; \
-	fi
-
-# Status
-ps: ## Show running containers
-	docker compose ps
-
-status: ps ## Alias for ps
-
-# Environment Setup
-env: ## Create .env file from .env.example
-	@if [ ! -f .env ]; then \
-		echo "$(BLUE)Creating .env file from .env.example...$(NC)"; \
-		cp .env.example .env; \
-		echo "$(GREEN)Created .env file. Please edit it with your credentials.$(NC)"; \
+		docker compose -f docker-compose.prod.yml down -v; \
+		docker system prune -af; \
+		echo "Cleanup complete"; \
 	else \
-		echo "$(YELLOW).env file already exists!$(NC)"; \
+		echo "Cancelled"; \
 	fi
 
-# Health Checks
-health: ## Check health of all services
-	@echo "$(BLUE)Checking service health...$(NC)"
-	@echo ""
-	@echo "$(GREEN)Backend:$(NC)"
-	@curl -s http://localhost:8080/health 2>/dev/null || echo "Backend not responding"
-	@echo ""
-	@echo "$(GREEN)Frontend:$(NC)"
-	@curl -s http://localhost:5173 -o /dev/null && echo "Frontend is running" || echo "Frontend not responding"
-	@echo ""
-	@echo "$(GREEN)MongoDB:$(NC)"
-	@docker compose exec -T mongodb mongosh --eval "db.adminCommand('ping')" --quiet 2>/dev/null || echo "MongoDB not responding"
+# Database shell
+db-shell:
+	docker exec -it bloodsa_mongodb_prod mongosh -u ${BLUEPRINT_DB_USERNAME} -p ${BLUEPRINT_DB_ROOT_PASSWORD}
 
+# Backend shell
+backend-shell:
+	docker exec -it bloodsa_backend_prod sh
 
+# Frontend shell
+frontend-shell:
+	docker exec -it bloodsa_frontend_prod sh
