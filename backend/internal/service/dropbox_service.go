@@ -402,15 +402,20 @@ func (s *DropboxService) RenameFolder(oldRelativePath, newRelativePath string) e
 	oldFullPath := s.getFullPath(oldRelativePath, parentFolder)
 	newFullPath := s.getFullPath(newRelativePath, parentFolder)
 
+	fmt.Printf("Dropbox RenameFolder - Parent: '%s', Old relative: '%s', New relative: '%s'\n", parentFolder, oldRelativePath, newRelativePath)
+	fmt.Printf("Dropbox RenameFolder - Old full path: '%s', New full path: '%s'\n", oldFullPath, newFullPath)
+
 	moveArg := files.NewRelocationArg(oldFullPath, newFullPath)
 	_, err := client.MoveV2(moveArg)
 	if err != nil {
+		fmt.Printf("Dropbox RenameFolder ERROR: %v\n", err)
 		if strings.Contains(err.Error(), "from_lookup/not_found") {
-			return ErrFolderNotFound
+			return fmt.Errorf("%w: folder '%s' not found in Dropbox", ErrFolderNotFound, oldFullPath)
 		}
-		return fmt.Errorf("failed to rename folder: %w", err)
+		return fmt.Errorf("failed to rename folder from '%s' to '%s': %w", oldFullPath, newFullPath, err)
 	}
 
+	fmt.Printf("Dropbox RenameFolder SUCCESS: '%s' → '%s'\n", oldFullPath, newFullPath)
 	return nil
 }
 
@@ -428,7 +433,7 @@ func (s *DropboxService) TestConnection(ctx context.Context) error {
 	// Normalize parent folder (empty = root)
 	testPath := parentFolder
 	if testPath == "" {
-		testPath = ""  // Dropbox API uses empty string for root
+		testPath = "" // Dropbox API uses empty string for root
 	}
 
 	// Try to list the parent folder
@@ -463,7 +468,7 @@ func (s *DropboxService) getFullPath(relativePath string, parentFolder string) s
 	if !strings.HasPrefix(result, "/") {
 		result = "/" + result
 	}
-	
+
 	return result
 }
 

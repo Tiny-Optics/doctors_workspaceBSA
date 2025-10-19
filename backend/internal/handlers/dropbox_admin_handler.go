@@ -60,7 +60,7 @@ type InitiateAuthRequest struct {
 	AppKey       string `json:"appKey" binding:"required"`
 	AppSecret    string `json:"appSecret" binding:"required"`
 	ParentFolder string `json:"parentFolder"` // Optional - empty means Dropbox root
-	RedirectURI  string `json:"redirectUri"` // Optional
+	RedirectURI  string `json:"redirectUri"`  // Optional
 }
 
 // InitiateAuth godoc
@@ -118,7 +118,7 @@ type CompleteAuthRequest struct {
 	AppKey       string `json:"appKey" binding:"required"`
 	AppSecret    string `json:"appSecret" binding:"required"`
 	ParentFolder string `json:"parentFolder"` // Optional - empty means Dropbox root
-	RedirectURI  string `json:"redirectUri"` // Must match the one used in authorization
+	RedirectURI  string `json:"redirectUri"`  // Must match the one used in authorization
 }
 
 // CompleteAuth godoc

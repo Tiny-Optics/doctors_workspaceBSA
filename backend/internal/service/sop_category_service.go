@@ -276,11 +276,15 @@ func (s *SOPCategoryService) UpdateCategory(
 	// If name changed, rename Dropbox folder
 	if nameChanged && s.dropboxService.IsConfigured() {
 		newDropboxPath := update["dropbox_path"].(string)
+		fmt.Printf("Attempting to rename Dropbox folder from '%s' to '%s'\n", oldDropboxPath, newDropboxPath)
 		err := s.dropboxService.RenameFolder(oldDropboxPath, newDropboxPath)
 		if err != nil {
-			// Log the error but don't fail the update
-			fmt.Printf("Warning: Failed to rename Dropbox folder from %s to %s: %v\n", oldDropboxPath, newDropboxPath, err)
+			// Log the error with more details
+			fmt.Printf("ERROR: Failed to rename Dropbox folder from '%s' to '%s': %v\n", oldDropboxPath, newDropboxPath, err)
+			// Return error to user so they know it failed
+			return nil, fmt.Errorf("category updated in database but failed to rename Dropbox folder: %w", err)
 		}
+		fmt.Printf("SUCCESS: Renamed Dropbox folder from '%s' to '%s'\n", oldDropboxPath, newDropboxPath)
 	}
 
 	// Get updated category
