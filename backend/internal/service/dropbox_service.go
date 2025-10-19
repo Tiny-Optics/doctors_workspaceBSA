@@ -145,14 +145,14 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	}
 
 	fmt.Println("Refreshing Dropbox access token...")
-	
+
 	// Prepare refresh request (form-urlencoded)
 	formData := url.Values{}
 	formData.Set("grant_type", "refresh_token")
 	formData.Set("refresh_token", s.cachedConfig.RefreshToken)
 	formData.Set("client_id", s.cachedConfig.AppKey)
 	formData.Set("client_secret", s.cachedConfig.AppSecret)
-	
+
 	// Call Dropbox token endpoint with form-urlencoded data
 	resp, err := http.Post(
 		"https://api.dropbox.com/oauth2/token",
