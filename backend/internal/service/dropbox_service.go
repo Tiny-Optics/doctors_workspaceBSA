@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -144,26 +145,19 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	}
 
 	fmt.Println("Refreshing Dropbox access token...")
-
-	// Prepare refresh request
-	data := map[string]string{
-		"grant_type":    "refresh_token",
-		"refresh_token": s.cachedConfig.RefreshToken,
-		"client_id":     s.cachedConfig.AppKey,
-		"client_secret": s.cachedConfig.AppSecret,
-	}
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		s.handleRefreshFailure(ctx, err)
-		return fmt.Errorf("%w: %v", ErrTokenRefreshFailed, err)
-	}
-
-	// Call Dropbox token endpoint
+	
+	// Prepare refresh request (form-urlencoded)
+	formData := url.Values{}
+	formData.Set("grant_type", "refresh_token")
+	formData.Set("refresh_token", s.cachedConfig.RefreshToken)
+	formData.Set("client_id", s.cachedConfig.AppKey)
+	formData.Set("client_secret", s.cachedConfig.AppSecret)
+	
+	// Call Dropbox token endpoint with form-urlencoded data
 	resp, err := http.Post(
 		"https://api.dropbox.com/oauth2/token",
-		"application/json",
-		bytes.NewBuffer(jsonData),
+		"application/x-www-form-urlencoded",
+		bytes.NewBufferString(formData.Encode()),
 	)
 	if err != nil {
 		s.handleRefreshFailure(ctx, err)

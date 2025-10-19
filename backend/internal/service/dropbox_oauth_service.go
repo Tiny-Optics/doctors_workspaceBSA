@@ -80,28 +80,22 @@ func (s *DropboxOAuthService) ExchangeCodeForTokens(
 		return nil, ErrOAuthConfigNotFound
 	}
 
-	// Prepare token request
-	data := map[string]string{
-		"code":          code,
-		"grant_type":    "authorization_code",
-		"client_id":     appKey,
-		"client_secret": appSecret,
-	}
-
+	// Prepare token request (form-urlencoded)
+	formData := url.Values{}
+	formData.Set("code", code)
+	formData.Set("grant_type", "authorization_code")
+	formData.Set("client_id", appKey)
+	formData.Set("client_secret", appSecret)
+	
 	if redirectURI != "" {
-		data["redirect_uri"] = redirectURI
+		formData.Set("redirect_uri", redirectURI)
 	}
 
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	// Call Dropbox token endpoint
+	// Call Dropbox token endpoint with form-urlencoded data
 	resp, err := http.Post(
 		"https://api.dropbox.com/oauth2/token",
-		"application/json",
-		bytes.NewBuffer(jsonData),
+		"application/x-www-form-urlencoded",
+		bytes.NewBufferString(formData.Encode()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call token endpoint: %w", err)
