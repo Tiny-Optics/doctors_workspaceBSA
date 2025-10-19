@@ -12,6 +12,7 @@ import (
 	"backend/internal/repository"
 
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -365,7 +366,7 @@ func (s *AuthService) GetUserFromToken(ctx context.Context, tokenString string) 
 // UpdatePassword updates a user's password
 func (s *AuthService) UpdatePassword(ctx context.Context, userID primitive.ObjectID, newPasswordHash, ipAddress string) error {
 	// Update password in database
-	err := s.userRepo.Update(ctx, userID, map[string]interface{}{
+	err := s.userRepo.Update(ctx, userID, bson.M{
 		"password_hash": newPasswordHash,
 	})
 	if err != nil {

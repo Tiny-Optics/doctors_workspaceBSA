@@ -85,7 +85,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { getUserRoleDisplayName, getAdminLevelDisplayName } from '@/types/user'
+import { getUserRoleDisplayName as getRoleDisplayName, getAdminLevelDisplayName } from '@/types/user'
 import PersonalInfoTab from '@/components/profile/PersonalInfoTab.vue'
 import SecurityTab from '@/components/profile/SecurityTab.vue'
 

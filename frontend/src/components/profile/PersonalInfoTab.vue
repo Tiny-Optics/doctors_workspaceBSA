@@ -170,7 +170,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useInstitutionsStore } from '@/stores/institutions'
-import { getUserRoleDisplayName, getAdminLevelDisplayName } from '@/types/user'
+import { getUserRoleDisplayName as getRoleDisplayName } from '@/types/user'
 import type { UpdateUserRequest } from '@/types/user'
 import { useToast } from '@/composables/useToast'
 
