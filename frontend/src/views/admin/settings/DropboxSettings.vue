@@ -16,6 +16,21 @@
 
     <!-- Content -->
     <template v-else>
+      <!-- Info Banner (when connected) -->
+      <div v-if="status?.isConnected" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div class="flex items-start">
+          <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-blue-800">Automatic Token Refresh Active</h3>
+            <p class="text-sm text-blue-700 mt-1">
+              Access tokens automatically refresh every ~4 hours. You authorized once, and the system handles the rest. No daily action needed! 🎉
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Status Card -->
       <div class="bg-white rounded-lg border border-gray-200 p-6">
         <div class="flex items-start justify-between">
@@ -79,8 +94,19 @@
         <!-- Health Metrics (when connected) -->
         <div v-if="status?.isConnected" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="bg-gray-50 rounded-lg p-4">
-            <p class="text-sm text-gray-600">Token Expires</p>
+            <p class="text-sm text-gray-600 flex items-center gap-1">
+              Access Token Expires
+              <span class="inline-block group relative">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="invisible group-hover:visible absolute left-0 top-6 w-48 bg-gray-900 text-white text-xs rounded p-2 z-10">
+                  Auto-refreshes every ~4 hours. No action needed!
+                </span>
+              </span>
+            </p>
             <p class="text-lg font-semibold text-gray-900 mt-1">{{ formatDate(status.tokenExpiry) }}</p>
+            <p class="text-xs text-green-600 mt-1">⚙️ Auto-refreshes</p>
           </div>
           <div class="bg-gray-50 rounded-lg p-4">
             <p class="text-sm text-gray-600">Consecutive Failures</p>
@@ -92,10 +118,14 @@
             >
               {{ status.consecutiveFailures }}
             </p>
+            <p class="text-xs text-gray-500 mt-1">
+              {{ status.consecutiveFailures === 0 ? '✓ Healthy' : '⚠️ Check logs' }}
+            </p>
           </div>
           <div class="bg-gray-50 rounded-lg p-4">
             <p class="text-sm text-gray-600">Parent Folder</p>
             <p class="text-lg font-semibold text-gray-900 mt-1">{{ status.parentFolder }}</p>
+            <p class="text-xs text-gray-500 mt-1">📁 Dropbox path</p>
           </div>
         </div>
 
