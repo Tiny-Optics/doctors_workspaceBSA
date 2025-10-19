@@ -386,4 +386,3 @@ func (s *AuthService) UpdatePassword(ctx context.Context, userID primitive.Objec
 
 	return nil
 }
-

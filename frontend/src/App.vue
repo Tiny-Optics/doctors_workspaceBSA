@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Header from './components/Header.vue'
 import Footer from './components/Footer.vue'
+import ToastNotification from './components/ToastNotification.vue'
 </script>
 
 <template>
@@ -10,6 +11,9 @@ import Footer from './components/Footer.vue'
       <router-view />
     </main>
     <Footer />
+    
+    <!-- Toast Notifications (Global) -->
+    <ToastNotification />
   </div>
 </template>
 
