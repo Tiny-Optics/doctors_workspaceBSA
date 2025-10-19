@@ -14,10 +14,10 @@ import (
 
 // StatsHandler handles admin statistics requests
 type StatsHandler struct {
-	userService          *service.UserService
-	institutionService   *service.InstitutionService
-	auditService         *service.AuditService
-	sopCategoryService   *service.SOPCategoryService
+	userService        *service.UserService
+	institutionService *service.InstitutionService
+	auditService       *service.AuditService
+	sopCategoryService *service.SOPCategoryService
 }
 
 // NewStatsHandler creates a new StatsHandler
@@ -32,14 +32,14 @@ func NewStatsHandler(userService *service.UserService, institutionService *servi
 
 // AdminStatsResponse represents the admin dashboard statistics
 type AdminStatsResponse struct {
-	TotalUsers         int64              `json:"totalUsers"`
-	ActiveUsers        int64              `json:"activeUsers"`
-	NewUsersThisMonth  int64              `json:"newUsersThisMonth"`
-	NewUsersThisWeek   int64              `json:"newUsersThisWeek"`
-	NewUsersToday      int64              `json:"newUsersToday"`
-	TotalInstitutions  int64              `json:"totalInstitutions"`
-	TotalSOPs          int64              `json:"totalSOPs"`
-	RoleDistribution   []RoleDistribution `json:"roleDistribution"`
+	TotalUsers        int64              `json:"totalUsers"`
+	ActiveUsers       int64              `json:"activeUsers"`
+	NewUsersThisMonth int64              `json:"newUsersThisMonth"`
+	NewUsersThisWeek  int64              `json:"newUsersThisWeek"`
+	NewUsersToday     int64              `json:"newUsersToday"`
+	TotalInstitutions int64              `json:"totalInstitutions"`
+	TotalSOPs         int64              `json:"totalSOPs"`
+	RoleDistribution  []RoleDistribution `json:"roleDistribution"`
 }
 
 // RoleDistribution represents user count by role
@@ -145,14 +145,14 @@ func (h *StatsHandler) GetAdminStats(c *gin.Context) {
 	}
 
 	response := AdminStatsResponse{
-		TotalUsers:         totalUsers,
-		ActiveUsers:        activeUsers,
-		NewUsersThisMonth:  newUsersThisMonth,
-		NewUsersThisWeek:   newUsersThisWeek,
-		NewUsersToday:      newUsersToday,
-		TotalInstitutions:  totalInstitutions,
-		TotalSOPs:          totalSOPs,
-		RoleDistribution:   roleDistResp,
+		TotalUsers:        totalUsers,
+		ActiveUsers:       activeUsers,
+		NewUsersThisMonth: newUsersThisMonth,
+		NewUsersThisWeek:  newUsersThisWeek,
+		NewUsersToday:     newUsersToday,
+		TotalInstitutions: totalInstitutions,
+		TotalSOPs:         totalSOPs,
+		RoleDistribution:  roleDistResp,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -199,4 +199,3 @@ func (h *StatsHandler) GetRecentActivity(c *gin.Context) {
 
 	c.JSON(http.StatusOK, activities)
 }
-

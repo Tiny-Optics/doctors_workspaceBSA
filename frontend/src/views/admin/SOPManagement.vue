@@ -370,6 +370,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { sopService } from '@/services/sopService'
 import type { SOPCategory, SOPFile, CreateCategoryRequest, UpdateCategoryRequest } from '@/types/sop'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const categories = ref<SOPCategory[]>([])
 const loading = ref(false)
@@ -411,7 +414,7 @@ async function loadCategories() {
     categories.value = response.categories || []
   } catch (error: any) {
     console.error('Failed to load categories:', error)
-    alert(`Failed to load categories: ${error.message}`)
+    toast.error(`Failed to load categories: ${error.message}`)
     categories.value = []
   } finally {
     loading.value = false
@@ -430,10 +433,10 @@ async function seedCategories() {
     const result = await sopService.seedCategories()
     console.log('Seed result:', result)
     await loadCategories()
-    alert(`Success! Created ${result.count} categories.`)
+    toast.success(`Successfully created ${result.count} categories!`)
   } catch (error: any) {
     console.error('Failed to seed categories:', error)
-    alert(`Failed to seed categories: ${error.message}`)
+    toast.error(`Failed to seed categories: ${error.message}`)
   } finally {
     loading.value = false
   }
@@ -511,28 +514,32 @@ async function submitForm() {
       if (formData.value.isActive !== editingCategory.value.isActive) updateData.isActive = formData.value.isActive
 
       await sopService.updateCategory(editingCategory.value.id, updateData)
+      toast.success(`Successfully updated "${formData.value.name}" category!`)
     } else {
       // Create
       await sopService.createCategory(formData.value)
+      toast.success(`Successfully created "${formData.value.name}" category!`)
     }
 
     await loadCategories()
     closeModal()
   } catch (error: any) {
     console.error('Failed to save category:', error)
-    alert(error.message || 'Failed to save category')
+    toast.error(error.message || 'Failed to save category')
   } finally {
     uploading.value = false
   }
 }
 
 async function toggleActive(category: SOPCategory) {
+  const action = category.isActive ? 'deactivated' : 'activated'
   try {
     await sopService.updateCategory(category.id, { isActive: !category.isActive })
     await loadCategories()
+    toast.success(`Category "${category.name}" has been ${action}`)
   } catch (error: any) {
     console.error('Failed to toggle status:', error)
-    alert(error.message || 'Failed to toggle status')
+    toast.error(error.message || 'Failed to toggle status')
   }
 }
 
@@ -544,14 +551,16 @@ function confirmDelete(category: SOPCategory) {
 async function deleteCategory() {
   if (!categoryToDelete.value) return
 
+  const categoryName = categoryToDelete.value.name
   try {
     await sopService.deleteCategory(categoryToDelete.value.id)
     await loadCategories()
     showDeleteConfirm.value = false
     categoryToDelete.value = null
+    toast.success(`Category "${categoryName}" has been deleted`)
   } catch (error: any) {
     console.error('Failed to delete category:', error)
-    alert(error.message || 'Failed to delete category')
+    toast.error(error.message || 'Failed to delete category')
   }
 }
 
@@ -563,9 +572,12 @@ async function viewFiles(category: SOPCategory) {
     const fileData = await sopService.getCategoryFiles(category.id)
     // Handle null, undefined, or empty responses
     files.value = Array.isArray(fileData) ? fileData : []
+    if (files.value.length === 0) {
+      toast.info(`No files found in "${category.name}". Upload files to Dropbox folder: ${category.dropboxPath}`)
+    }
   } catch (error: any) {
     console.error('Failed to load files:', error)
-    alert(error.message || 'Failed to load files')
+    toast.error(error.message || 'Failed to load files. Ensure Dropbox is configured in System Settings.')
     files.value = []
   } finally {
     loadingFiles.value = false
@@ -578,9 +590,10 @@ async function downloadFile(file: SOPFile) {
   try {
     const downloadLink = await sopService.getFileDownloadLink(selectedCategory.value.id, file.name)
     window.open(downloadLink, '_blank')
+    toast.success(`Downloading "${file.name}"`)
   } catch (error: any) {
     console.error('Failed to get download link:', error)
-    alert(error.message || 'Failed to get download link')
+    toast.error(error.message || 'Failed to get download link')
   }
 }
 

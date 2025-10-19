@@ -417,7 +417,7 @@ func (s *SOPCategoryService) GetFileDownloadLink(
 // CountCategories returns the total count of SOP categories
 func (s *SOPCategoryService) CountCategories(ctx context.Context, activeOnly bool) (int64, error) {
 	filter := repository.SOPCategoryFilter{}
-	
+
 	if activeOnly {
 		isActive := true
 		filter.IsActive = &isActive
