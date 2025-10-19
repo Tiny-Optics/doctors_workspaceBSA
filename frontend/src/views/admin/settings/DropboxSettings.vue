@@ -288,24 +288,6 @@
         </div>
       </div>
 
-      <!-- Success/Error Messages -->
-      <div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-lg p-4">
-        <div class="flex items-start">
-          <svg class="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          <p class="ml-3 text-sm text-green-700">{{ successMessage }}</p>
-        </div>
-      </div>
-
-      <div v-if="errorMessage" class="bg-red-50 border border-red-200 rounded-lg p-4">
-        <div class="flex items-start">
-          <svg class="w-5 h-5 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          <p class="ml-3 text-sm text-red-700">{{ errorMessage }}</p>
-        </div>
-      </div>
     </template>
   </div>
 </template>
@@ -314,6 +296,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { dropboxAdminService } from '@/services/dropboxAdminService'
 import type { DropboxStatus } from '@/types/dropbox'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 // State
 const loading = ref(false)
@@ -332,10 +317,6 @@ const authConfig = ref({
 const authorizationUrl = ref('')
 const authorizationCode = ref('')
 
-// Messages
-const successMessage = ref('')
-const errorMessage = ref('')
-
 // Computed
 const canInitiateAuth = computed(() => {
   return authConfig.value.appKey && 
@@ -346,13 +327,12 @@ const canInitiateAuth = computed(() => {
 // Methods
 async function loadStatus() {
   loading.value = true
-  errorMessage.value = ''
   
   try {
     status.value = await dropboxAdminService.getStatus()
   } catch (error: any) {
     console.error('Failed to load Dropbox status:', error)
-    errorMessage.value = error.message || 'Failed to load Dropbox status'
+    toast.error(error.message || 'Failed to load Dropbox status')
   } finally {
     loading.value = false
   }
@@ -360,17 +340,15 @@ async function loadStatus() {
 
 async function handleInitiateAuth() {
   actionLoading.value = true
-  errorMessage.value = ''
-  successMessage.value = ''
   
   try {
     const response = await dropboxAdminService.initiateAuth(authConfig.value)
     authorizationUrl.value = response.authUrl
     oauthStep.value = 2
-    successMessage.value = 'Authorization URL generated. Please click the button to authorize.'
+    toast.success('Authorization URL generated. Please click the button to authorize Dropbox.')
   } catch (error: any) {
     console.error('Failed to initiate auth:', error)
-    errorMessage.value = error.message || 'Failed to initiate authorization'
+    toast.error(error.message || 'Failed to initiate authorization')
   } finally {
     actionLoading.value = false
   }
@@ -378,8 +356,6 @@ async function handleInitiateAuth() {
 
 async function handleCompleteAuth() {
   actionLoading.value = true
-  errorMessage.value = ''
-  successMessage.value = ''
   
   try {
     const response = await dropboxAdminService.completeAuth({
@@ -387,7 +363,7 @@ async function handleCompleteAuth() {
       ...authConfig.value
     })
     
-    successMessage.value = response.message
+    toast.success(response.message + ' - Auto-refresh is now active!')
     
     // Reset form and reload status
     oauthStep.value = 1
@@ -398,7 +374,7 @@ async function handleCompleteAuth() {
     await loadStatus()
   } catch (error: any) {
     console.error('Failed to complete auth:', error)
-    errorMessage.value = error.message || 'Failed to complete authorization'
+    toast.error(error.message || 'Failed to complete authorization')
   } finally {
     actionLoading.value = false
   }
@@ -406,19 +382,17 @@ async function handleCompleteAuth() {
 
 async function handleTestConnection() {
   actionLoading.value = true
-  errorMessage.value = ''
-  successMessage.value = ''
   
   try {
     const response = await dropboxAdminService.testConnection()
     if (response.success) {
-      successMessage.value = response.message
+      toast.success(response.message)
     } else {
-      errorMessage.value = response.message
+      toast.error(response.message)
     }
   } catch (error: any) {
     console.error('Connection test failed:', error)
-    errorMessage.value = error.message || 'Connection test failed'
+    toast.error(error.message || 'Connection test failed')
   } finally {
     actionLoading.value = false
   }
@@ -426,16 +400,14 @@ async function handleTestConnection() {
 
 async function handleForceRefresh() {
   actionLoading.value = true
-  errorMessage.value = ''
-  successMessage.value = ''
   
   try {
     const response = await dropboxAdminService.forceRefresh()
-    successMessage.value = response.message
+    toast.success(response.message)
     await loadStatus()
   } catch (error: any) {
     console.error('Force refresh failed:', error)
-    errorMessage.value = error.message || 'Force refresh failed'
+    toast.error(error.message || 'Force refresh failed')
   } finally {
     actionLoading.value = false
   }
@@ -449,17 +421,15 @@ function confirmDelete() {
 
 async function handleDelete() {
   actionLoading.value = true
-  errorMessage.value = ''
-  successMessage.value = ''
   
   try {
     const response = await dropboxAdminService.deleteConfiguration()
-    successMessage.value = response.message
+    toast.success(response.message)
     showActions.value = false
     await loadStatus()
   } catch (error: any) {
     console.error('Delete configuration failed:', error)
-    errorMessage.value = error.message || 'Delete configuration failed'
+    toast.error(error.message || 'Delete configuration failed')
   } finally {
     actionLoading.value = false
   }
