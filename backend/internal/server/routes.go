@@ -39,13 +39,23 @@ func (s *Server) RegisterRoutes() http.Handler {
 	auditRepo := repository.NewAuditRepository(db)
 	institutionRepo := repository.NewInstitutionRepository(db)
 	sopCategoryRepo := repository.NewSOPCategoryRepository(db)
+	dropboxConfigRepo := repository.NewDropboxConfigRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
 	institutionService := service.NewInstitutionService(institutionRepo, userRepo, auditRepo)
 	userService := service.NewUserService(userRepo, auditRepo, authService)
 	auditService := service.NewAuditService(auditRepo, userRepo)
-	dropboxService := service.NewDropboxService()
+
+	// Initialize encryption service
+	encryptionService, err := service.NewEncryptionService()
+	if err != nil {
+		panic("Failed to initialize encryption service: " + err.Error())
+	}
+
+	// Initialize Dropbox services
+	dropboxService := service.NewDropboxService(dropboxConfigRepo, encryptionService)
+	dropboxOAuthService := service.NewDropboxOAuthService(dropboxConfigRepo, auditRepo, encryptionService, dropboxService)
 	sopCategoryService := service.NewSOPCategoryService(sopCategoryRepo, dropboxService, auditRepo, userRepo)
 
 	// Initialize handlers
@@ -54,6 +64,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	institutionHandler := handlers.NewInstitutionHandler(institutionService)
 	statsHandler := handlers.NewStatsHandler(userService, institutionService, auditService)
 	sopCategoryHandler := handlers.NewSOPCategoryHandler(sopCategoryService)
+	dropboxAdminHandler := handlers.NewDropboxAdminHandler(dropboxOAuthService)
 
 	// API routes group
 	api := r.Group("/api")
@@ -130,6 +141,23 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 			// Seeding (super admin only)
 			sops.POST("/seed", middleware.RequirePermission(models.PermDeleteUsers), sopCategoryHandler.SeedCategories)
+		}
+
+		// Admin routes (super admin only)
+		admin := api.Group("/admin")
+		admin.Use(middleware.AuthMiddleware(authService))
+		admin.Use(middleware.RequirePermission(models.PermManageSystem))
+		{
+			// Dropbox configuration
+			dropbox := admin.Group("/dropbox")
+			{
+				dropbox.GET("/status", dropboxAdminHandler.GetStatus)
+				dropbox.POST("/authorize", dropboxAdminHandler.InitiateAuth)
+				dropbox.POST("/callback", dropboxAdminHandler.CompleteAuth)
+				dropbox.POST("/refresh", dropboxAdminHandler.ForceRefresh)
+				dropbox.POST("/test", dropboxAdminHandler.TestConnection)
+				dropbox.DELETE("/configuration", dropboxAdminHandler.DeleteConfiguration)
+			}
 		}
 	}
 
