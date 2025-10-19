@@ -185,12 +185,15 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	// Update password (this would need to be added to user service)
-	// For now, we'll just return success
-	// TODO: Add UpdatePassword method to user service
+	ipAddress := middleware.GetIPAddress(c)
+
+	// Update password in database
+	if err := h.authService.UpdatePassword(c.Request.Context(), user.ID, newPasswordHash, ipAddress); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":      "password changed successfully",
-		"passwordHash": newPasswordHash, // In production, this would be saved to DB
+		"message": "password changed successfully",
 	})
 }

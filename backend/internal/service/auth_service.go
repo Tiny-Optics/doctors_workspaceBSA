@@ -361,3 +361,28 @@ func (s *AuthService) GetUserFromToken(ctx context.Context, tokenString string) 
 
 	return user, nil
 }
+
+// UpdatePassword updates a user's password
+func (s *AuthService) UpdatePassword(ctx context.Context, userID primitive.ObjectID, newPasswordHash, ipAddress string) error {
+	// Update password in database
+	err := s.userRepo.Update(ctx, userID, map[string]interface{}{
+		"password_hash": newPasswordHash,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Log password change
+	s.auditRepo.Create(ctx, &models.AuditLog{
+		UserID:      &userID,
+		PerformedBy: &userID,
+		Action:      "password.change",
+		IPAddress:   ipAddress,
+		Details: map[string]interface{}{
+			"changed_at": time.Now(),
+		},
+	})
+
+	return nil
+}
+
