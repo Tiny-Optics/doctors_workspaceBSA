@@ -62,7 +62,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
 	institutionHandler := handlers.NewInstitutionHandler(institutionService)
-	statsHandler := handlers.NewStatsHandler(userService, institutionService, auditService)
+	statsHandler := handlers.NewStatsHandler(userService, institutionService, auditService, sopCategoryService)
 	sopCategoryHandler := handlers.NewSOPCategoryHandler(sopCategoryService)
 	dropboxAdminHandler := handlers.NewDropboxAdminHandler(dropboxOAuthService)
 

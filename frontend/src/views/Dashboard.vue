@@ -35,20 +35,26 @@
             <!-- Quick Stats -->
             <div v-if="authStore.isAdmin" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div class="bg-gradient-to-r from-bloodsa-red to-red-700 text-white p-4 rounded-lg">
-                <div class="text-2xl font-bold">{{ systemStats.totalUsers }}</div>
+                <div class="text-2xl font-bold">
+                  <span v-if="loadingStats" class="animate-pulse">--</span>
+                  <span v-else>{{ systemStats.totalUsers }}</span>
+                </div>
                 <div class="text-sm opacity-90">Total Users</div>
               </div>
               <div class="bg-gradient-to-r from-blue-500 to-blue-700 text-white p-4 rounded-lg">
-                <div class="text-2xl font-bold">{{ systemStats.totalSOPs }}</div>
-                <div class="text-sm opacity-90">SOPs</div>
+                <div class="text-2xl font-bold">
+                  <span v-if="loadingStats" class="animate-pulse">--</span>
+                  <span v-else>{{ systemStats.totalSOPs }}</span>
+                </div>
+                <div class="text-sm opacity-90">SOP Categories</div>
               </div>
               <div class="bg-gradient-to-r from-green-500 to-green-700 text-white p-4 rounded-lg">
-                <div class="text-2xl font-bold">{{ systemStats.totalReferrals }}</div>
-                <div class="text-sm opacity-90">Referrals</div>
+                <div class="text-xs opacity-90">Coming Soon</div>
+                <div class="text-sm opacity-90 mt-1">Referrals</div>
               </div>
               <div class="bg-gradient-to-r from-purple-500 to-purple-700 text-white p-4 rounded-lg">
-                <div class="text-2xl font-bold">{{ systemStats.totalRegistry }}</div>
-                <div class="text-sm opacity-90">Registry</div>
+                <div class="text-xs opacity-90">Coming Soon</div>
+                <div class="text-sm opacity-90 mt-1">Registry</div>
               </div>
             </div>
           </div>
@@ -256,6 +262,7 @@ import { computed, ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useInstitutionsStore } from '@/stores/institutions'
 import { getUserRoleDisplayName } from '@/types/user'
+import { statsService } from '@/services/statsService'
 
 const authStore = useAuthStore()
 const institutionsStore = useInstitutionsStore()
@@ -265,10 +272,10 @@ const user = computed(() => authStore.user)
 // System stats for admin dashboard
 const systemStats = ref({
   totalUsers: 0,
-  totalSOPs: 0,
-  totalReferrals: 0,
-  totalRegistry: 0
+  totalSOPs: 0
 })
+
+const loadingStats = ref(false)
 
 const userFullName = computed(() => {
   if (!user.value) return 'Guest'
@@ -323,17 +330,19 @@ const formatLastLogin = (lastLogin?: string) => {
 const loadSystemStats = async () => {
   if (!authStore.isAdmin) return
   
+  loadingStats.value = true
+  
   try {
-    // TODO: Replace with actual API calls when endpoints are available
-    // For now, using mock data
+    const stats = await statsService.getAdminStats()
     systemStats.value = {
-      totalUsers: 24,
-      totalSOPs: 12,
-      totalReferrals: 8,
-      totalRegistry: 15
+      totalUsers: stats.totalUsers,
+      totalSOPs: stats.totalSOPs
     }
   } catch (error) {
     console.error('Failed to load system stats:', error)
+    // Keep defaults on error
+  } finally {
+    loadingStats.value = false
   }
 }
 

@@ -5,7 +5,7 @@
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
         <!-- Back Button -->
         <button 
-          @click="$router.go(-1)"
+          @click="$router.push({ name: 'dashboard' })"
           class="mb-6 inline-flex items-center text-white hover:text-white/80 transition-colors"
         >
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

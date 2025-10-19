@@ -22,9 +22,9 @@
 
           <!-- CTA Button -->
           <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button class="btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+            <a href="/login" class="btn-primary text-lg px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
               Login to Access Workspace
-            </button>
+            </a>
             <a href="#features" class="text-bloodsa-red font-medium hover:text-bloodsa-light-red transition-colors duration-200">
               Learn More →
             </a>
@@ -149,9 +149,9 @@
         <p class="text-xl text-white opacity-90 mb-8">
           Login to access your personalized workspace and start managing your clinical workflows more efficiently.
         </p>
-        <button class="bg-white text-bloodsa-red px-8 py-4 rounded-md font-semibold text-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg">
+        <a href="/login" class="bg-white text-bloodsa-red px-8 py-4 rounded-md font-semibold text-lg hover:bg-gray-100 transition-colors duration-200 shadow-lg">
           Access Workspace Now
-        </button>
+        </a>
       </div>
     </section>
   </div>

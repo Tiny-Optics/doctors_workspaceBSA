@@ -14,17 +14,19 @@ import (
 
 // StatsHandler handles admin statistics requests
 type StatsHandler struct {
-	userService        *service.UserService
-	institutionService *service.InstitutionService
-	auditService       *service.AuditService
+	userService          *service.UserService
+	institutionService   *service.InstitutionService
+	auditService         *service.AuditService
+	sopCategoryService   *service.SOPCategoryService
 }
 
 // NewStatsHandler creates a new StatsHandler
-func NewStatsHandler(userService *service.UserService, institutionService *service.InstitutionService, auditService *service.AuditService) *StatsHandler {
+func NewStatsHandler(userService *service.UserService, institutionService *service.InstitutionService, auditService *service.AuditService, sopCategoryService *service.SOPCategoryService) *StatsHandler {
 	return &StatsHandler{
 		userService:        userService,
 		institutionService: institutionService,
 		auditService:       auditService,
+		sopCategoryService: sopCategoryService,
 	}
 }
 
@@ -36,6 +38,7 @@ type AdminStatsResponse struct {
 	NewUsersThisWeek   int64              `json:"newUsersThisWeek"`
 	NewUsersToday      int64              `json:"newUsersToday"`
 	TotalInstitutions  int64              `json:"totalInstitutions"`
+	TotalSOPs          int64              `json:"totalSOPs"`
 	RoleDistribution   []RoleDistribution `json:"roleDistribution"`
 }
 
@@ -92,6 +95,13 @@ func (h *StatsHandler) GetAdminStats(c *gin.Context) {
 		return
 	}
 
+	// Get total SOPs (active categories only)
+	totalSOPs, err := h.sopCategoryService.CountCategories(ctx, true)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get total SOPs"})
+		return
+	}
+
 	// Get new users this month
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
@@ -141,6 +151,7 @@ func (h *StatsHandler) GetAdminStats(c *gin.Context) {
 		NewUsersThisWeek:   newUsersThisWeek,
 		NewUsersToday:      newUsersToday,
 		TotalInstitutions:  totalInstitutions,
+		TotalSOPs:          totalSOPs,
 		RoleDistribution:   roleDistResp,
 	}
 
