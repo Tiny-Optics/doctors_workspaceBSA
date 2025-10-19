@@ -10,8 +10,9 @@
         <button
           @click="seedCategories"
           v-if="categories.length === 0"
-          class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-          :disabled="loading"
+          class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="loading || !dropboxConfigured"
+          :title="!dropboxConfigured ? 'Configure Dropbox first in System Settings' : ''"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -20,13 +21,41 @@
         </button>
         <button
           @click="openCreateModal"
-          class="px-4 py-2 bg-bloodsa-red text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+          class="px-4 py-2 bg-bloodsa-red text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="!dropboxConfigured"
+          :title="!dropboxConfigured ? 'Configure Dropbox first in System Settings' : ''"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           Create Category
         </button>
+      </div>
+    </div>
+
+    <!-- Dropbox Not Configured Warning -->
+    <div v-if="!checkingDropbox && !dropboxConfigured" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+      <div class="flex items-start">
+        <svg class="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div class="ml-3 flex-1">
+          <h3 class="text-sm font-medium text-yellow-800">Dropbox Not Configured</h3>
+          <p class="text-sm text-yellow-700 mt-1">
+            Dropbox must be configured before creating or managing SOP categories. 
+            Please configure Dropbox in System Settings first.
+          </p>
+          <router-link 
+            to="/admin/settings" 
+            class="inline-flex items-center mt-3 px-4 py-2 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700 transition-colors"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Go to System Settings
+          </router-link>
+        </div>
       </div>
     </div>
 
@@ -42,12 +71,14 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
       <h3 class="text-xl font-semibold text-gray-900 mb-2">No SOP Categories Yet</h3>
-      <p class="text-gray-600 mb-2">Get started by seeding the 4 default categories or create your own.</p>
-      <p class="text-sm text-gray-500 mb-6">
+      <p v-if="dropboxConfigured" class="text-gray-600 mb-2">Get started by seeding the 4 default categories or create your own.</p>
+      <p v-else class="text-gray-600 mb-2">Configure Dropbox first, then create your SOP categories.</p>
+      <p v-if="dropboxConfigured" class="text-sm text-gray-500 mb-6">
         <strong>Seed Categories</strong> will automatically create: Anemia, Lymphoma, Myeloma, and General Business
       </p>
       <div class="flex gap-3 justify-center">
         <button
+          v-if="dropboxConfigured"
           @click="seedCategories"
           class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
         >
@@ -57,6 +88,7 @@
           Seed Initial Categories
         </button>
         <button
+          v-if="dropboxConfigured"
           @click="openCreateModal"
           class="px-6 py-3 bg-bloodsa-red text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
         >
@@ -65,6 +97,17 @@
           </svg>
           Create Custom Category
         </button>
+        <router-link
+          v-else
+          to="/admin/settings"
+          class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium inline-flex items-center"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Configure Dropbox First
+        </router-link>
       </div>
     </div>
 
@@ -122,8 +165,9 @@
               </button>
               <button
                 @click="openEditModal(category)"
-                class="text-indigo-600 hover:text-indigo-900"
-                title="Edit"
+                class="text-indigo-600 hover:text-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="!dropboxConfigured"
+                :title="!dropboxConfigured ? 'Configure Dropbox first in System Settings' : 'Edit'"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -371,11 +415,14 @@ import { ref, computed, onMounted } from 'vue'
 import { sopService } from '@/services/sopService'
 import type { SOPCategory, SOPFile, CreateCategoryRequest, UpdateCategoryRequest } from '@/types/sop'
 import { useToast } from '@/composables/useToast'
+import { dropboxAdminService } from '@/services/dropboxAdminService'
 
 const toast = useToast()
 
 const categories = ref<SOPCategory[]>([])
 const loading = ref(false)
+const dropboxConfigured = ref(false)
+const checkingDropbox = ref(true)
 const showModal = ref(false)
 const showFilesModal = ref(false)
 const showDeleteConfirm = ref(false)
@@ -401,9 +448,23 @@ const sortedCategories = computed(() => {
   return [...categories.value].sort((a, b) => a.displayOrder - b.displayOrder)
 })
 
-onMounted(() => {
+onMounted(async () => {
+  await checkDropboxStatus()
   loadCategories()
 })
+
+async function checkDropboxStatus() {
+  checkingDropbox.value = true
+  try {
+    const status = await dropboxAdminService.getStatus()
+    dropboxConfigured.value = status.isConnected || false
+  } catch (error: any) {
+    console.error('Failed to check Dropbox status:', error)
+    dropboxConfigured.value = false
+  } finally {
+    checkingDropbox.value = false
+  }
+}
 
 async function loadCategories() {
   loading.value = true
@@ -423,6 +484,11 @@ async function loadCategories() {
 }
 
 async function seedCategories() {
+  if (!dropboxConfigured.value) {
+    toast.error('Please configure Dropbox in System Settings before creating categories.')
+    return
+  }
+  
   if (!confirm('This will create 4 initial categories (Anemia, Lymphoma, Myeloma, General Business). Continue?')) {
     return
   }
@@ -443,6 +509,11 @@ async function seedCategories() {
 }
 
 function openCreateModal() {
+  if (!dropboxConfigured.value) {
+    toast.error('Please configure Dropbox in System Settings before creating categories.')
+    return
+  }
+  
   isEditMode.value = false
   editingCategory.value = null
   formData.value = {
@@ -458,6 +529,11 @@ function openCreateModal() {
 }
 
 function openEditModal(category: SOPCategory) {
+  if (!dropboxConfigured.value) {
+    toast.error('Please configure Dropbox in System Settings before editing categories.')
+    return
+  }
+  
   isEditMode.value = true
   editingCategory.value = category
   formData.value = {
