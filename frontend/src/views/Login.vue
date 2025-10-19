@@ -97,21 +97,8 @@
             </div>
           </div>
 
-          <!-- Remember Me & Forgot Password -->
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <input
-                id="remember-me"
-                v-model="rememberMe"
-                type="checkbox"
-                class="h-4 w-4 text-bloodsa-red focus:ring-bloodsa-red border-gray-300 rounded"
-                :disabled="isLoading"
-              />
-              <label for="remember-me" class="ml-2 block text-sm text-gray-700">
-                Remember me
-              </label>
-            </div>
-
+          <!-- Forgot Password -->
+          <div class="flex items-center justify-end">
             <div class="text-sm">
               <a href="#" class="font-medium text-bloodsa-red hover:text-bloodsa-light-red transition-colors">
                 Forgot password?
@@ -168,7 +155,6 @@ const credentials = ref({
 })
 
 const showPassword = ref(false)
-const rememberMe = ref(false)
 const error = ref<string | null>(null)
 const isLoading = ref(false)
 
