@@ -190,14 +190,27 @@ func (s *DropboxOAuthService) ExchangeCodeForTokens(
 		fmt.Printf("Warning: Failed to reload Dropbox service: %v\n", err)
 	}
 
+	// Create parent folder if it doesn't exist
+	if s.dropboxService.IsConfigured() {
+		fmt.Printf("Ensuring parent folder exists: %s\n", parentFolder)
+		// Use empty relative path to create just the parent folder
+		if err := s.dropboxService.CreateFolder(""); err != nil {
+			fmt.Printf("Warning: Failed to create parent folder: %v\n", err)
+			// Don't fail the authorization, just log the warning
+		} else {
+			fmt.Printf("Successfully ensured parent folder exists: %s\n", parentFolder)
+		}
+	}
+
 	// Audit log
 	s.auditRepo.Create(ctx, &models.AuditLog{
 		UserID:      &createdBy.ID,
 		PerformedBy: &createdBy.ID,
 		Action:      "dropbox.authorize",
 		Details: bson.M{
-			"config_id":  config.ID.Hex(),
-			"account_id": tokenResp.AccountID,
+			"config_id":     config.ID.Hex(),
+			"account_id":    tokenResp.AccountID,
+			"parent_folder": parentFolder,
 		},
 		IPAddress: ipAddress,
 	})

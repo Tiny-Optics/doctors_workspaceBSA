@@ -212,7 +212,12 @@
               placeholder="/SOPS"
               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
             />
-            <p class="text-sm text-gray-500 mt-1">The Dropbox folder path where SOPs are stored</p>
+            <p class="text-sm text-gray-500 mt-1">
+              The Dropbox folder path where SOPs will be stored (e.g., <code class="bg-gray-100 px-1 rounded">/SOPS</code>)
+            </p>
+            <p class="text-xs text-blue-600 mt-1">
+              ℹ️ Folder will be auto-created if it doesn't exist
+            </p>
           </div>
 
           <button
@@ -342,6 +347,20 @@ async function handleInitiateAuth() {
   actionLoading.value = true
   
   try {
+    // Validate and normalize parent folder path
+    let parentFolder = authConfig.value.parentFolder.trim()
+    
+    // Ensure it starts with /
+    if (!parentFolder.startsWith('/')) {
+      parentFolder = '/' + parentFolder
+    }
+    
+    // Remove trailing slashes
+    parentFolder = parentFolder.replace(/\/+$/, '')
+    
+    // Update the config with normalized path
+    authConfig.value.parentFolder = parentFolder
+    
     const response = await dropboxAdminService.initiateAuth(authConfig.value)
     authorizationUrl.value = response.authUrl
     oauthStep.value = 2
