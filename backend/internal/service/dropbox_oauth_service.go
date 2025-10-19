@@ -190,8 +190,8 @@ func (s *DropboxOAuthService) ExchangeCodeForTokens(
 		fmt.Printf("Warning: Failed to reload Dropbox service: %v\n", err)
 	}
 
-	// Create parent folder if it doesn't exist
-	if s.dropboxService.IsConfigured() {
+	// Create parent folder if it doesn't exist (skip if using root)
+	if s.dropboxService.IsConfigured() && parentFolder != "" {
 		fmt.Printf("Ensuring parent folder exists: %s\n", parentFolder)
 		// Use empty relative path to create just the parent folder
 		if err := s.dropboxService.CreateFolder(""); err != nil {
@@ -200,6 +200,8 @@ func (s *DropboxOAuthService) ExchangeCodeForTokens(
 		} else {
 			fmt.Printf("Successfully ensured parent folder exists: %s\n", parentFolder)
 		}
+	} else if parentFolder == "" {
+		fmt.Println("Using Dropbox root as parent folder (no folder creation needed)")
 	}
 
 	// Audit log

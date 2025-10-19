@@ -425,8 +425,14 @@ func (s *DropboxService) TestConnection(ctx context.Context) error {
 	parentFolder := s.cachedConfig.ParentFolder
 	s.cacheMutex.RUnlock()
 
+	// Normalize parent folder (empty = root)
+	testPath := parentFolder
+	if testPath == "" {
+		testPath = ""  // Dropbox API uses empty string for root
+	}
+
 	// Try to list the parent folder
-	listArg := files.NewListFolderArg(parentFolder)
+	listArg := files.NewListFolderArg(testPath)
 	_, err := client.ListFolder(listArg)
 	if err != nil {
 		return fmt.Errorf("dropbox connection test failed: %w", err)
@@ -442,12 +448,23 @@ func (s *DropboxService) getFullPath(relativePath string, parentFolder string) s
 	relativePath = strings.TrimPrefix(relativePath, "/")
 	relativePath = strings.TrimSuffix(relativePath, "/")
 
+	// If parent folder is empty, use root
+	if parentFolder == "" {
+		parentFolder = "/"
+	}
+
 	// Join with parent folder
 	if relativePath == "" {
 		return parentFolder
 	}
 
-	return filepath.Join(parentFolder, relativePath)
+	// Ensure result starts with / for Dropbox
+	result := filepath.Join(parentFolder, relativePath)
+	if !strings.HasPrefix(result, "/") {
+		result = "/" + result
+	}
+	
+	return result
 }
 
 func (s *DropboxService) entryToFileInfo(entry files.IsMetadata) *DropboxFileInfo {

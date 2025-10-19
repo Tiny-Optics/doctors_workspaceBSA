@@ -124,8 +124,11 @@
           </div>
           <div class="bg-gray-50 rounded-lg p-4">
             <p class="text-sm text-gray-600">Parent Folder</p>
-            <p class="text-lg font-semibold text-gray-900 mt-1">{{ status.parentFolder }}</p>
-            <p class="text-xs text-gray-500 mt-1">📁 Dropbox path</p>
+            <p class="text-lg font-semibold text-gray-900 mt-1">
+              {{ status.parentFolder || '/' }} 
+              <span v-if="!status.parentFolder" class="text-sm text-gray-500 font-normal">(root)</span>
+            </p>
+            <p class="text-xs text-gray-500 mt-1">📁 Dropbox base path</p>
           </div>
         </div>
 
@@ -204,20 +207,25 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
-              Parent Folder <span class="text-red-500">*</span>
+              Parent Folder Path
             </label>
             <input
               v-model="authConfig.parentFolder"
               type="text"
-              placeholder="/SOPS"
+              placeholder="Leave empty for Dropbox root, or enter a path like /BloodSA_Documents"
               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
             />
-            <p class="text-sm text-gray-500 mt-1">
-              The Dropbox folder path where SOPs will be stored (e.g., <code class="bg-gray-100 px-1 rounded">/SOPS</code>)
-            </p>
-            <p class="text-xs text-blue-600 mt-1">
-              ℹ️ Folder will be auto-created if it doesn't exist
-            </p>
+            <div class="mt-2 space-y-1">
+              <p class="text-sm text-gray-500">
+                Leave empty to use Dropbox root. SOP categories will create: <code class="bg-gray-100 px-1 rounded text-xs">SOPS/CategoryName/</code>
+              </p>
+              <p class="text-xs text-blue-600">
+                ℹ️ Example: Empty → <code class="bg-gray-100 px-1 rounded">SOPS/Anemia/</code>
+              </p>
+              <p class="text-xs text-blue-600">
+                ℹ️ Example: <code class="bg-gray-100 px-1 rounded">/Documents</code> → <code class="bg-gray-100 px-1 rounded">/Documents/SOPS/Anemia/</code>
+              </p>
+            </div>
           </div>
 
           <button
@@ -366,7 +374,7 @@ const oauthStep = ref(1)
 const authConfig = ref({
   appKey: '',
   appSecret: '',
-  parentFolder: '/SOPS',
+  parentFolder: '',
   redirectUri: ''
 })
 const authorizationUrl = ref('')
@@ -375,8 +383,8 @@ const authorizationCode = ref('')
 // Computed
 const canInitiateAuth = computed(() => {
   return authConfig.value.appKey && 
-         authConfig.value.appSecret && 
-         authConfig.value.parentFolder
+         authConfig.value.appSecret
+  // Note: parentFolder can be empty (Dropbox root)
 })
 
 // Methods
@@ -400,13 +408,13 @@ async function handleInitiateAuth() {
     // Validate and normalize parent folder path
     let parentFolder = authConfig.value.parentFolder.trim()
     
-    // Ensure it starts with /
-    if (!parentFolder.startsWith('/')) {
-      parentFolder = '/' + parentFolder
+    // If not empty, ensure it starts with / and remove trailing slashes
+    if (parentFolder) {
+      if (!parentFolder.startsWith('/')) {
+        parentFolder = '/' + parentFolder
+      }
+      parentFolder = parentFolder.replace(/\/+$/, '')
     }
-    
-    // Remove trailing slashes
-    parentFolder = parentFolder.replace(/\/+$/, '')
     
     // Update the config with normalized path
     authConfig.value.parentFolder = parentFolder
@@ -436,7 +444,7 @@ async function handleCompleteAuth() {
     
     // Reset form and reload status
     oauthStep.value = 1
-    authConfig.value = { appKey: '', appSecret: '', parentFolder: '/SOPS', redirectUri: '' }
+    authConfig.value = { appKey: '', appSecret: '', parentFolder: '', redirectUri: '' }
     authorizationCode.value = ''
     authorizationUrl.value = ''
     
