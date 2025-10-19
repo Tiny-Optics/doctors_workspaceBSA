@@ -59,7 +59,7 @@ func (h *DropboxAdminHandler) GetStatus(c *gin.Context) {
 type InitiateAuthRequest struct {
 	AppKey       string `json:"appKey" binding:"required"`
 	AppSecret    string `json:"appSecret" binding:"required"`
-	ParentFolder string `json:"parentFolder" binding:"required"`
+	ParentFolder string `json:"parentFolder"` // Optional - empty means Dropbox root
 	RedirectURI  string `json:"redirectUri"` // Optional
 }
 
@@ -117,7 +117,7 @@ type CompleteAuthRequest struct {
 	Code         string `json:"code" binding:"required"`
 	AppKey       string `json:"appKey" binding:"required"`
 	AppSecret    string `json:"appSecret" binding:"required"`
-	ParentFolder string `json:"parentFolder" binding:"required"`
+	ParentFolder string `json:"parentFolder"` // Optional - empty means Dropbox root
 	RedirectURI  string `json:"redirectUri"` // Must match the one used in authorization
 }
 
