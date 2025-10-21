@@ -231,7 +231,7 @@ const refreshStats = async () => {
 
 const loadSystemStats = async () => {
   try {
-    const response = await fetch('http://localhost:8080/api/stats/admin', {
+    const response = await fetch('/api/stats/admin', {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authStore.token}`
@@ -276,7 +276,7 @@ const loadSystemStats = async () => {
 
 const loadRecentActivity = async () => {
   try {
-    const response = await fetch('http://localhost:8080/api/stats/recent-activity?limit=10', {
+    const response = await fetch('/api/stats/recent-activity?limit=10', {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${authStore.token}`

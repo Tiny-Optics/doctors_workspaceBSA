@@ -129,7 +129,7 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <img 
                 v-if="category.imagePath" 
-                :src="`http://localhost:8080${category.imagePath}`" 
+                :src="`${category.imagePath}`" 
                 :alt="category.name"
                 class="h-12 w-12 rounded object-cover"
               />
@@ -261,7 +261,7 @@
                   class="relative"
                 >
                   <img
-                    :src="imagePreview || `http://localhost:8080${editingCategory?.imagePath}`"
+                    :src="imagePreview || `${editingCategory?.imagePath}`"
                     alt="Preview"
                     class="h-24 w-24 rounded object-cover"
                   />

@@ -242,7 +242,7 @@ async function changePassword() {
   changingPassword.value = true
   
   try {
-    const response = await fetch('http://localhost:8080/api/auth/change-password', {
+    const response = await fetch('/api/auth/change-password', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,

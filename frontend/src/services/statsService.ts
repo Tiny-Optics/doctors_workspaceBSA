@@ -16,7 +16,7 @@ export interface RoleDistribution {
   count: number
 }
 
-const API_URL = 'http://localhost:8080/api'
+const API_URL = '/api'
 
 // Helper function to get auth headers
 function getAuthHeaders(): HeadersInit {

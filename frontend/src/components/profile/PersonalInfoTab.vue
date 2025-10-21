@@ -249,7 +249,7 @@ async function saveChanges() {
     }
     
     // Call the update API
-    const response = await fetch(`http://localhost:8080/api/users/${user.value.id}`, {
+    const response = await fetch(`/api/users/${user.value.id}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,

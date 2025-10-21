@@ -60,7 +60,7 @@
               <img 
                 v-if="category.imagePath" 
                 class="w-full h-64 object-cover rounded-lg" 
-                :src="`http://localhost:8080${category.imagePath}`" 
+                :src="`${category.imagePath}`" 
                 :alt="category.name"
                 @error="handleImageError"
               />

@@ -41,7 +41,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
       if (options?.limit) params.append('limit', String(options.limit))
       if (options?.skip) params.append('skip', String(options.skip))
 
-      const response = await fetch(`http://localhost:8080/api/institutions?${params.toString()}`, {
+      const response = await fetch(`/api/institutions?${params.toString()}`, {
         headers: getAuthHeaders()
       })
 
@@ -75,7 +75,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:8080/api/institutions/${id}`, {
+      const response = await fetch(`/api/institutions/${id}`, {
         headers: getAuthHeaders()
       })
 
@@ -107,7 +107,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:8080/api/institutions', {
+      const response = await fetch('/api/institutions', {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(data)
@@ -140,7 +140,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:8080/api/institutions/${id}`, {
+      const response = await fetch(`/api/institutions/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(data)
@@ -176,7 +176,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:8080/api/institutions/${id}`, {
+      const response = await fetch(`/api/institutions/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       })
@@ -206,7 +206,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:8080/api/institutions/${id}/activate`, {
+      const response = await fetch(`/api/institutions/${id}/activate`, {
         method: 'POST',
         headers: getAuthHeaders()
       })
@@ -239,7 +239,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:8080/api/institutions/${id}/deactivate`, {
+      const response = await fetch(`/api/institutions/${id}/deactivate`, {
         method: 'POST',
         headers: getAuthHeaders()
       })
