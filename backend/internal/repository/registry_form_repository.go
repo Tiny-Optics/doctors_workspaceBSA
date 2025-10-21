@@ -149,42 +149,35 @@ func (r *RegistryFormRepository) Delete(ctx context.Context, id primitive.Object
 
 // SetActive sets a form schema as active and deactivates all others
 func (r *RegistryFormRepository) SetActive(ctx context.Context, id primitive.ObjectID) error {
-	// Start a session for transaction
-	session, err := r.collection.Database().Client().StartSession()
+	// For development without replica set, do operations without transaction
+	// In production, consider using a replica set for atomic operations
+
+	now := time.Now()
+
+	// Deactivate all forms
+	_, err := r.collection.UpdateMany(
+		ctx,
+		bson.M{},
+		bson.M{"$set": bson.M{"is_active": false, "updated_at": now}},
+	)
 	if err != nil {
 		return err
 	}
-	defer session.EndSession(ctx)
 
-	// Execute transaction
-	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		// Deactivate all forms
-		_, err := r.collection.UpdateMany(
-			sessCtx,
-			bson.M{},
-			bson.M{"$set": bson.M{"is_active": false, "updated_at": time.Now()}},
-		)
-		if err != nil {
-			return nil, err
-		}
+	// Activate the specified form
+	result, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": id},
+		bson.M{"$set": bson.M{"is_active": true, "updated_at": now}},
+	)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return ErrFormSchemaNotFound
+	}
 
-		// Activate the specified form
-		result, err := r.collection.UpdateOne(
-			sessCtx,
-			bson.M{"_id": id},
-			bson.M{"$set": bson.M{"is_active": true, "updated_at": time.Now()}},
-		)
-		if err != nil {
-			return nil, err
-		}
-		if result.MatchedCount == 0 {
-			return nil, ErrFormSchemaNotFound
-		}
-
-		return nil, nil
-	})
-
-	return err
+	return nil
 }
 
 // DeactivateAll deactivates all form schemas

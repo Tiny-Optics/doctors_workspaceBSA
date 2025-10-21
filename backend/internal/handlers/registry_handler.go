@@ -118,6 +118,37 @@ func (h *RegistryHandler) UpdateConfiguration(c *gin.Context) {
 	c.JSON(http.StatusOK, config)
 }
 
+// SendTestEmail godoc
+// @Summary Send test email
+// @Description Send a test email to verify SMTP configuration
+// @Tags registry
+// @Accept json
+// @Produce json
+// @Param request body map[string]string true "Test email request with 'email' field"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/registry/test-email [post]
+// @Security BearerAuth
+func (h *RegistryHandler) SendTestEmail(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email address"})
+		return
+	}
+
+	err := h.registryService.SendTestEmail(c.Request.Context(), req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "test email sent successfully"})
+}
+
 // Form Schema Endpoints
 
 // CreateFormSchema godoc

@@ -1,0 +1,478 @@
+<template>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Back Button -->
+    <button 
+      @click="$router.push('/admin/registry')"
+      class="mb-6 inline-flex items-center text-gray-600 hover:text-bloodsa-red transition-colors"
+    >
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Back to Registry Settings
+    </button>
+
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Registry Submissions</h1>
+      <p class="mt-2 text-gray-600">
+        Review and manage all registry form submissions.
+      </p>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+          <select
+            v-model="filters.status"
+            @change="loadSubmissions"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+          >
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">User</label>
+          <input
+            v-model="filters.userId"
+            type="text"
+            placeholder="User ID"
+            @input="debouncedLoadSubmissions"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Date From</label>
+          <input
+            v-model="filters.dateFrom"
+            type="date"
+            @change="loadSubmissions"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Date To</label>
+          <input
+            v-model="filters.dateTo"
+            type="date"
+            @change="loadSubmissions"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-bloodsa-red"></div>
+    </div>
+
+    <!-- Submissions Table -->
+    <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                User
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Form
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Submitted
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Documents
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr v-for="submission in submissions" :key="submission.id" class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 bg-bloodsa-red rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    {{ getUserInitials(submission.userId) }}
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">{{ submission.userId }}</div>
+                    <div class="text-sm text-gray-500">User ID</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ getFormName(submission.formSchemaId) }}</div>
+                <div class="text-sm text-gray-500">Form Schema</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span
+                  :class="getStatusClass(submission.status)"
+                  class="px-2 py-1 text-xs font-medium rounded-full"
+                >
+                  {{ submission.status }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {{ formatDate(submission.createdAt) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center space-x-2">
+                  <span class="text-sm text-gray-900">{{ submission.uploadedDocuments.length }} files</span>
+                  <button
+                    v-if="submission.uploadedDocuments.length > 0"
+                    @click="viewDocuments(submission)"
+                    class="text-blue-600 hover:text-blue-700 text-sm"
+                  >
+                    View
+                  </button>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="flex items-center space-x-2">
+                  <button
+                    @click="viewSubmission(submission)"
+                    class="text-blue-600 hover:text-blue-700"
+                  >
+                    View
+                  </button>
+                  <div class="relative" v-if="submission.status === 'pending'">
+                    <button
+                      @click="showStatusMenu = submission.id"
+                      class="text-gray-600 hover:text-gray-700"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                      </svg>
+                    </button>
+                    <div
+                      v-if="showStatusMenu === submission.id"
+                      class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"
+                    >
+                      <div class="py-1">
+                        <button
+                          @click="updateStatus(submission, 'approved')"
+                          class="block w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-green-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          @click="updateStatus(submission, 'rejected')"
+                          class="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <button
+            @click="previousPage"
+            :disabled="currentPage === 1"
+            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <button
+            @click="nextPage"
+            :disabled="currentPage === totalPages"
+            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, total) }} of {{ total }} results
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+              <button
+                @click="previousPage"
+                :disabled="currentPage === 1"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <button
+                @click="nextPage"
+                :disabled="currentPage === totalPages"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submission Details Modal -->
+    <div v-if="selectedSubmission" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Submission Details</h2>
+            <button
+              @click="selectedSubmission = null"
+              class="text-gray-400 hover:text-gray-600"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="space-y-6">
+            <!-- Submission Info -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">User ID</label>
+                <p class="mt-1 text-sm text-gray-900">{{ selectedSubmission.userId }}</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Status</label>
+                <span
+                  :class="getStatusClass(selectedSubmission.status)"
+                  class="mt-1 inline-block px-2 py-1 text-xs font-medium rounded-full"
+                >
+                  {{ selectedSubmission.status }}
+                </span>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Submitted</label>
+                <p class="mt-1 text-sm text-gray-900">{{ formatDate(selectedSubmission.createdAt) }}</p>
+              </div>
+            </div>
+
+            <!-- Form Data -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Form Data</h3>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <pre class="text-sm text-gray-900 whitespace-pre-wrap">{{ JSON.stringify(selectedSubmission.formData, null, 2) }}</pre>
+              </div>
+            </div>
+
+            <!-- Documents -->
+            <div v-if="selectedSubmission.uploadedDocuments.length > 0">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Uploaded Documents</h3>
+              <div class="space-y-2">
+                <div
+                  v-for="(document, index) in selectedSubmission.uploadedDocuments"
+                  :key="index"
+                  class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
+                  <div class="flex items-center space-x-3">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="text-sm text-gray-900">{{ document }}</span>
+                  </div>
+                  <button
+                    @click="downloadDocument(document)"
+                    class="text-blue-600 hover:text-blue-700 text-sm"
+                  >
+                    Download
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div v-if="selectedSubmission.status === 'pending'" class="flex justify-end space-x-4">
+              <button
+                @click="updateStatus(selectedSubmission, 'rejected')"
+                class="px-6 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                Reject
+              </button>
+              <button
+                @click="updateStatus(selectedSubmission, 'approved')"
+                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, watch } from 'vue'
+import { registryService } from '@/services/registryService'
+import type { Submission } from '@/services/registryService'
+import { useToast } from '@/composables/useToast'
+
+const loading = ref(false)
+const submissions = ref<Submission[]>([])
+const selectedSubmission = ref<Submission | null>(null)
+const showStatusMenu = ref<string | null>(null)
+const toast = useToast()
+
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const totalPages = ref(0)
+
+const filters = ref({
+  status: '',
+  userId: '',
+  dateFrom: '',
+  dateTo: ''
+})
+
+let debounceTimer: ReturnType<typeof setTimeout>
+
+async function loadSubmissions() {
+  loading.value = true
+  try {
+    const params = {
+      page: currentPage.value,
+      limit: pageSize.value,
+      ...(filters.value.status && { status: filters.value.status }),
+      ...(filters.value.userId && { userId: filters.value.userId }),
+      ...(filters.value.dateFrom && { dateFrom: filters.value.dateFrom }),
+      ...(filters.value.dateTo && { dateTo: filters.value.dateTo })
+    }
+
+    const response = await registryService.getAllSubmissions(params)
+    submissions.value = Array.isArray(response.submissions) ? response.submissions : []
+    total.value = response.total || 0
+    totalPages.value = Math.ceil((response.total || 0) / pageSize.value)
+  } catch (error) {
+    console.error('Failed to load submissions:', error)
+    // Set empty state instead of showing error for 404
+    submissions.value = []
+    total.value = 0
+    totalPages.value = 0
+    // Only show error toast if it's not a 404
+    if (error instanceof Error && !error.message.includes('404')) {
+      toast.error('Failed to load submissions. Please try again.')
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+function debouncedLoadSubmissions() {
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    loadSubmissions()
+  }, 500)
+}
+
+async function updateStatus(submission: Submission, status: 'approved' | 'rejected') {
+  try {
+    await registryService.updateSubmissionStatus(submission.id, status)
+    submission.status = status
+    showStatusMenu.value = null
+    if (selectedSubmission.value?.id === submission.id) {
+      selectedSubmission.value.status = status
+    }
+    toast.success(`Submission ${status} successfully!`)
+  } catch (error) {
+    console.error('Failed to update status:', error)
+    toast.error('Failed to update submission status. Please try again.')
+  }
+}
+
+function viewSubmission(submission: Submission) {
+  selectedSubmission.value = submission
+}
+
+function viewDocuments(submission: Submission) {
+  // TODO: Implement document viewer
+  console.log('View documents for submission:', submission.id)
+}
+
+function downloadDocument(document: string) {
+  // TODO: Implement document download
+  console.log('Download document:', document)
+}
+
+function previousPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--
+    loadSubmissions()
+  }
+}
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+    loadSubmissions()
+  }
+}
+
+function getStatusClass(status: string) {
+  switch (status) {
+    case 'approved':
+      return 'bg-green-100 text-green-800'
+    case 'rejected':
+      return 'bg-red-100 text-red-800'
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
+  }
+}
+
+function getUserInitials(userId: string) {
+  return userId.substring(0, 2).toUpperCase()
+}
+
+function getFormName(formSchemaId: string) {
+  // TODO: Get form name from form schema
+  return formSchemaId
+}
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString()
+}
+
+// Close status menu when clicking outside
+document.addEventListener('click', (e) => {
+  if (!(e.target as Element).closest('.relative')) {
+    showStatusMenu.value = null
+  }
+})
+
+onMounted(() => {
+  loadSubmissions()
+})
+</script>
+
+<style scoped>
+.bg-bloodsa-red {
+  background-color: #8B0000;
+}
+.text-bloodsa-red {
+  color: #8B0000;
+}
+.border-bloodsa-red {
+  border-color: #8B0000;
+}
+</style>

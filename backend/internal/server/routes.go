@@ -180,6 +180,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 			{
 				registry.GET("/config", registryHandler.GetConfiguration)
 				registry.PUT("/config", registryHandler.UpdateConfiguration)
+				registry.POST("/test-email", registryHandler.SendTestEmail)
 				registry.GET("/submissions", registryHandler.GetAllSubmissions)
 				registry.PATCH("/submissions/:id/status", registryHandler.UpdateSubmissionStatus)
 			}

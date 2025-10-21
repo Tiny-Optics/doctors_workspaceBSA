@@ -47,7 +47,7 @@ const router = createRouter({
     {
       path: '/registry',
       name: 'registry',
-      component: () => import('../views/ComingSoon.vue'),
+      component: () => import('../views/registry/Registry.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -115,6 +115,26 @@ const router = createRouter({
           path: 'sops',
           name: 'admin-sops',
           component: () => import('../views/admin/SOPManagement.vue')
+        },
+        {
+          path: 'registry',
+          name: 'admin-registry',
+          component: () => import('../views/admin/RegistrySettings.vue')
+        },
+        {
+          path: 'registry/configuration',
+          name: 'admin-registry-configuration',
+          component: () => import('../views/admin/RegistryConfiguration.vue')
+        },
+        {
+          path: 'registry/forms',
+          name: 'admin-registry-forms',
+          component: () => import('../views/admin/RegistryForms.vue')
+        },
+        {
+          path: 'registry/submissions',
+          name: 'admin-registry-submissions',
+          component: () => import('../views/admin/RegistrySubmissions.vue')
         }
       ]
     }

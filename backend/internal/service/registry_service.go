@@ -164,6 +164,28 @@ func (s *RegistryService) UpdateConfiguration(
 	return config, nil
 }
 
+// SendTestEmail sends a test email using the current SMTP configuration
+func (s *RegistryService) SendTestEmail(ctx context.Context, recipientEmail string) error {
+	// Get current configuration
+	config, err := s.configRepo.GetConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get configuration: %w", err)
+	}
+
+	// Validate SMTP configuration is complete
+	if !config.SMTPConfig.IsComplete() {
+		return errors.New("SMTP configuration is incomplete")
+	}
+
+	// Send test email using the email service
+	err = s.emailService.SendTestEmail(config.SMTPConfig, recipientEmail)
+	if err != nil {
+		return fmt.Errorf("failed to send test email: %w", err)
+	}
+
+	return nil
+}
+
 // Form Schema Management
 
 // CreateFormSchema creates a new form schema
