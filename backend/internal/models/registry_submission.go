@@ -70,13 +70,8 @@ func (s *RegistrySubmission) Validate() error {
 		return errors.New("form schema ID is required")
 	}
 
-	if len(s.FormData) == 0 {
-		return ErrEmptyFormData
-	}
-
-	if len(s.UploadedDocuments) == 0 {
-		return ErrNoDocumentsUploaded
-	}
+	// Note: FormData and UploadedDocuments can be empty depending on the form schema
+	// The service layer validates these based on the actual schema requirements
 
 	if !s.Status.IsValid() {
 		return ErrInvalidSubmissionStatus
@@ -95,9 +90,8 @@ func (req *CreateSubmissionRequest) Validate() error {
 		return errors.New("invalid form schema ID format")
 	}
 
-	if len(req.FormData) == 0 {
-		return ErrEmptyFormData
-	}
+	// Note: FormData can be empty if the form only has file fields
+	// The service layer will validate based on the actual form schema
 
 	return nil
 }
