@@ -79,3 +79,11 @@ backups/
 # Uploaded images (managed by Docker volume)
 backend/uploads/*
 !backend/uploads/sops/.gitkeep
+
+backend/cmd/debug-login/
+backend/cmd/init-registry/
+backend/cmd/seed/
+backend/cmd/seed-users/
+backend/cmd/seed-30-users/
+backend/cmd/seed-institutions/
+backend/cmd/migrate-institutions/

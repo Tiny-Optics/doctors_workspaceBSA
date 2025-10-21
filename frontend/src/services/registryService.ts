@@ -262,6 +262,25 @@ class RegistryService {
     })
     return handleResponse<{ message: string }>(response)
   }
+
+  // Get example documents
+  async getExampleDocuments(): Promise<{ files: any[] }> {
+    const response = await fetch(`${API_URL}/registry/example-documents`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+    return handleResponse<{ files: any[] }>(response)
+  }
+
+  // Get download link for example document
+  async getDocumentDownloadLink(filePath: string): Promise<{ link: string }> {
+    const params = new URLSearchParams({ path: filePath })
+    const response = await fetch(`${API_URL}/registry/example-documents/download?${params.toString()}`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    })
+    return handleResponse<{ link: string }>(response)
+  }
 }
 
 export const registryService = new RegistryService()

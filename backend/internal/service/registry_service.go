@@ -106,7 +106,16 @@ func (s *RegistryService) UpdateConfiguration(
 		config.VideoURL = *req.VideoURL
 	}
 	if req.DocumentsPath != nil {
-		config.DocumentsPath = *req.DocumentsPath
+		newPath := *req.DocumentsPath
+		// Check if the path changed and if Dropbox is configured
+		if newPath != config.DocumentsPath && newPath != "" && s.dropboxService.IsConfigured() {
+			// Create the folder in Dropbox if it doesn't exist
+			// CreateFolder is idempotent - it returns nil if folder already exists
+			if err := s.dropboxService.CreateFolder(newPath); err != nil {
+				return nil, fmt.Errorf("failed to create example documents folder in Dropbox: %w", err)
+			}
+		}
+		config.DocumentsPath = newPath
 	}
 	if req.NotificationEmails != nil {
 		config.NotificationEmails = *req.NotificationEmails
@@ -643,4 +652,53 @@ func (s *RegistryService) UpdateSubmissionStatus(
 	})
 
 	return submission, nil
+}
+
+// GetExampleDocuments retrieves files from the configured example documents path
+func (s *RegistryService) GetExampleDocuments(ctx context.Context) ([]DropboxFileInfo, error) {
+	// Get configuration to find the documents path
+	config, err := s.configRepo.GetConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get configuration: %w", err)
+	}
+
+	if config.DocumentsPath == "" {
+		return nil, errors.New("example documents path not configured")
+	}
+
+	// Check if Dropbox is configured
+	if !s.dropboxService.IsConfigured() {
+		return nil, errors.New("dropbox is not configured")
+	}
+
+	// List files from Dropbox
+	files, err := s.dropboxService.ListFiles(config.DocumentsPath)
+	if err != nil {
+		if err == ErrFolderNotFound {
+			// Return empty list if folder doesn't exist yet
+			return []DropboxFileInfo{}, nil
+		}
+		return nil, fmt.Errorf("failed to list documents: %w", err)
+	}
+
+	return files, nil
+}
+
+// GetExampleDocumentDownloadLink generates a temporary download link for an example document
+func (s *RegistryService) GetExampleDocumentDownloadLink(ctx context.Context, filePath string) (string, error) {
+	// Check if Dropbox is configured
+	if !s.dropboxService.IsConfigured() {
+		return "", errors.New("dropbox is not configured")
+	}
+
+	// Get download link from Dropbox
+	link, err := s.dropboxService.GetFileDownloadLink(filePath)
+	if err != nil {
+		if err == ErrFileNotFound {
+			return "", errors.New("file not found")
+		}
+		return "", fmt.Errorf("failed to get download link: %w", err)
+	}
+
+	return link, nil
 }

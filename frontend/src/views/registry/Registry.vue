@@ -23,41 +23,36 @@
           <!-- Video Section -->
           <div v-if="registryConfig?.videoUrl" class="max-w-4xl mx-auto">
             <div class="bg-white rounded-xl shadow-lg p-8">
+              <!-- Logo Header -->
               <div class="flex items-center justify-center mb-6">
                 <div class="flex items-center">
+                  <span class="text-6xl font-bold text-bloodsa-red mr-2">A</span>
                   <div class="relative">
-                    <!-- African H PeR Logo with Continent Icon -->
-                    <div class="flex items-center">
-                      <span class="text-6xl font-bold text-bloodsa-red mr-2">A</span>
-                      <div class="relative">
-                        <span class="text-6xl font-bold text-bloodsa-red">H</span>
-                        <div class="absolute -top-2 -right-2 w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                          <svg class="w-6 h-6 text-bloodsa-red" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                          </svg>
-                        </div>
-                      </div>
-                      <span class="text-6xl font-bold text-bloodsa-red ml-2">PeR</span>
-                    </div>
-                    
-                    <!-- YouTube Play Button Overlay -->
-                    <div class="absolute inset-0 flex items-center justify-center">
-                      <button 
-                        @click="playVideo"
-                        class="w-20 h-20 bg-red-600 hover:bg-red-700 rounded-full flex items-center justify-center shadow-lg transform hover:scale-110 transition-all duration-200"
-                      >
-                        <svg class="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                      </button>
+                    <span class="text-6xl font-bold text-bloodsa-red">H</span>
+                    <div class="absolute -top-2 -right-2 w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                      <svg class="w-6 h-6 text-bloodsa-red" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                      </svg>
                     </div>
                   </div>
+                  <span class="text-6xl font-bold text-bloodsa-red ml-2">PeR</span>
                 </div>
               </div>
               
-              <p class="text-bloodsa-red text-lg font-medium text-center">
+              <p class="text-bloodsa-red text-lg font-medium text-center mb-6">
                 African Haematology Oncology Patient Electronic Registry
               </p>
+
+              <!-- Embedded YouTube Video -->
+              <div class="aspect-video w-full rounded-lg overflow-hidden shadow-lg">
+                <iframe
+                  :src="getEmbedUrl(registryConfig.videoUrl)"
+                  class="w-full h-full"
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen
+                ></iframe>
+              </div>
             </div>
           </div>
           
@@ -114,7 +109,10 @@
           </div>
 
           <!-- Example Documents Card -->
-          <div class="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-bloodsa-red transform hover:-translate-y-1 cursor-pointer">
+          <div 
+            @click="$router.push({ name: 'registry-example-documents' })"
+            class="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-bloodsa-red transform hover:-translate-y-1 cursor-pointer"
+          >
             <div class="p-6">
               <div class="w-full h-48 bg-gradient-to-br from-blue-200 to-blue-300 rounded-lg flex items-center justify-center mb-6">
                 <div class="text-center">
@@ -175,10 +173,34 @@ async function loadRegistryConfig() {
   }
 }
 
-function playVideo() {
-  if (registryConfig.value?.videoUrl) {
-    window.open(registryConfig.value.videoUrl, '_blank')
+function getEmbedUrl(url: string): string {
+  // Convert various YouTube URL formats to embed URL
+  // Supports:
+  // - https://www.youtube.com/watch?v=VIDEO_ID
+  // - https://youtu.be/VIDEO_ID
+  // - https://www.youtube.com/embed/VIDEO_ID (already embed format)
+  
+  if (!url) return ''
+  
+  // If already an embed URL, return as is
+  if (url.includes('/embed/')) {
+    return url
   }
+  
+  // Extract video ID from different formats
+  let videoId = ''
+  
+  if (url.includes('youtube.com/watch?v=')) {
+    videoId = url.split('v=')[1]?.split('&')[0] || ''
+  } else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0] || ''
+  }
+  
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}`
+  }
+  
+  return url
 }
 
 onMounted(() => {

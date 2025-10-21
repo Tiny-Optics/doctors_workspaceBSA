@@ -51,6 +51,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/registry/example-documents',
+      name: 'registry-example-documents',
+      component: () => import('../views/registry/ExampleDocuments.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/documents',
       name: 'documents',
       component: () => import('../views/ComingSoon.vue'),

@@ -649,3 +649,54 @@ func (h *RegistryHandler) UpdateSubmissionStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, submission)
 }
+
+// GetExampleDocuments godoc
+// @Summary List example documents
+// @Description List all files in the example documents directory
+// @Tags registry
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /registry/example-documents [get]
+// @Security BearerAuth
+func (h *RegistryHandler) GetExampleDocuments(c *gin.Context) {
+	files, err := h.registryService.GetExampleDocuments(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"files": files,
+	})
+}
+
+// GetExampleDocumentDownloadLink godoc
+// @Summary Get download link for example document
+// @Description Get a temporary download link for a specific example document
+// @Tags registry
+// @Produce json
+// @Param path query string true "File path"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /registry/example-documents/download [get]
+// @Security BearerAuth
+func (h *RegistryHandler) GetExampleDocumentDownloadLink(c *gin.Context) {
+	filePath := c.Query("path")
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file path is required"})
+		return
+	}
+
+	link, err := h.registryService.GetExampleDocumentDownloadLink(c.Request.Context(), filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"link": link,
+	})
+}
