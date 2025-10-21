@@ -16,7 +16,7 @@ import (
 func (s *Server) RegisterRoutes() http.Handler {
 	r := gin.Default()
 
-	// Trust Nginx proxy
+	// Trust Nginx proxy and Docker network
 	r.SetTrustedProxies([]string{"127.0.0.1", "::1", "172.18.0.0/16"})
 
 	r.Use(cors.New(cors.Config{
