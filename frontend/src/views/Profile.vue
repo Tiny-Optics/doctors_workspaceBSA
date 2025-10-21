@@ -13,8 +13,8 @@
             <div>
               <h1 class="text-3xl font-bold text-gray-900">{{ userFullName }}</h1>
               <div class="flex items-center space-x-3 mt-2">
-                <span class="px-3 py-1 bg-bloodsa-red bg-opacity-10 text-bloodsa-red rounded-full text-sm font-medium">
-                  {{ getRoleDisplayName(user?.role) }}
+                <span v-if="user?.role" class="px-3 py-1 bg-bloodsa-red bg-opacity-10 text-bloodsa-red rounded-full text-sm font-medium">
+                  {{ getRoleDisplayName(user.role) }}
                 </span>
                 <span v-if="user?.adminLevel" class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
                   {{ getAdminLevelDisplayName(user?.adminLevel) }}

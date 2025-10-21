@@ -163,7 +163,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { registryService } from '@/services/registryService'
+import { registryService } from '../../services/registryService'
 
 const registryConfig = ref<any>(null)
 

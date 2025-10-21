@@ -266,7 +266,7 @@
                     :id="field.id"
                     type="file"
                     multiple
-                    :required="field.required && (!uploadedFiles[field.id] || uploadedFiles[field.id].length === 0)"
+                    :required="field.required && (!uploadedFiles[field.id] || (uploadedFiles[field.id] && uploadedFiles[field.id]!.length === 0))"
                     @change="handleFileChange($event, field.id)"
                     class="block w-full text-sm text-gray-500
                       file:mr-4 file:py-2 file:px-4
@@ -281,8 +281,8 @@
                   <p class="text-sm text-gray-500 mt-1">You can select multiple files</p>
                   
                   <!-- Display selected files -->
-                  <div v-if="uploadedFiles[field.id] && uploadedFiles[field.id].length > 0" class="mt-2 space-y-1">
-                    <div v-for="(file, index) in uploadedFiles[field.id]" :key="index" class="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
+                  <div v-if="uploadedFiles[field.id] && uploadedFiles[field.id]!.length > 0" class="mt-2 space-y-1">
+                    <div v-for="(file, index) in uploadedFiles[field.id]!" :key="index" class="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
                       <span class="text-sm text-gray-700 truncate">{{ file.name }}</span>
                       <button
                         type="button"
@@ -439,7 +439,8 @@ function validateForm(): boolean {
     // Check required fields
     if (field.required) {
       if (field.type === 'file') {
-        if (!uploadedFiles.value[field.id] || uploadedFiles.value[field.id].length === 0) {
+        const files = uploadedFiles.value[field.id]
+        if (!files || files.length === 0) {
           validationErrors.value[field.id] = `${field.label} is required`
           isValid = false
         }
