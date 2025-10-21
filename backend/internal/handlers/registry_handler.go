@@ -429,13 +429,16 @@ func (h *RegistryHandler) SubmitForm(c *gin.Context) {
 		formData = make(map[string]interface{})
 	}
 
-	// Get files
+	// Get files (accept both "files" and "documents" field names)
 	form := c.Request.MultipartForm
-	files := form.File["documents"]
+	files := form.File["files"]
 	if len(files) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "at least one document is required"})
-		return
+		// Try alternative field name for backwards compatibility
+		files = form.File["documents"]
 	}
+	
+	// Note: We don't require files here - the service layer will validate
+	// based on the form schema's required file fields
 
 	// Create submission request
 	req := &models.CreateSubmissionRequest{

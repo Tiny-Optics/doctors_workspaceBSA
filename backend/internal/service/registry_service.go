@@ -444,9 +444,9 @@ func (s *RegistryService) SubmitForm(
 		return nil, err
 	}
 
-	// Validate files (at least one required)
-	if len(files) == 0 {
-		return nil, models.ErrNoDocumentsUploaded
+	// Validate files based on schema requirements
+	if err := s.validateFiles(files, schema); err != nil {
+		return nil, err
 	}
 
 	// Create submission record
@@ -529,6 +529,25 @@ func (s *RegistryService) validateFormData(data map[string]interface{}, schema *
 	}
 
 	// Additional validation can be added here based on field types and validation rules
+	return nil
+}
+
+// validateFiles validates uploaded files against the form schema
+func (s *RegistryService) validateFiles(files []*multipart.FileHeader, schema *models.RegistryFormSchema) error {
+	// Check if any file fields are required
+	hasRequiredFileField := false
+	for _, field := range schema.Fields {
+		if field.Type == models.FieldTypeFile && field.Required {
+			hasRequiredFileField = true
+			break
+		}
+	}
+
+	// If a required file field exists and no files were uploaded
+	if hasRequiredFileField && len(files) == 0 {
+		return models.ErrNoDocumentsUploaded
+	}
+
 	return nil
 }
 
