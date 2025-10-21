@@ -30,7 +30,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile.prod
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/doctors-backend:latest
+          tags: ghcr.io/tiny-optics/doctors-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
@@ -40,7 +40,7 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile.prod
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/doctors-frontend:latest
+          tags: ghcr.io/tiny-optics/doctors-frontend:latest
           build-args: |
             VITE_API_URL=http://169.255.58.102/api
           cache-from: type=gha
@@ -54,10 +54,14 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: GITHUB_TOKEN,GITHUB_ACTOR
           script: |
             set -e
             cd /opt/doctors_workspace
@@ -66,7 +70,7 @@ jobs:
             git pull origin main
             
             echo "=== Logging in to GitHub Container Registry ==="
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
             
             echo "=== Stopping containers ==="
             docker compose -f docker-compose.ghcr.yml down
