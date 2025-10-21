@@ -1,0 +1,57 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: doctors_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - doctors_network
+
+  # Backend API (Pre-built from GHCR)
+  backend:
+    image: ghcr.io/tiny-optics/doctors-backend:latest
+    container_name: doctors_backend
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      - PORT=8080
+      - APP_ENV=production
+      - BLUEPRINT_DB_HOST=mongodb
+      - BLUEPRINT_DB_PORT=27017
+      - BLUEPRINT_DB_USERNAME=${MONGO_ROOT_USER}
+      - BLUEPRINT_DB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - sop_uploads:/app/uploads
+    networks:
+      - doctors_network
+
+  # Frontend (Pre-built from GHCR)
+  frontend:
+    image: ghcr.io/tiny-optics/doctors-frontend:latest
+    container_name: doctors_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    networks:
+      - doctors_network
+
+volumes:
+  mongodb_data:
+    driver: local
+  sop_uploads:
+    driver: local
+
+networks:
+  doctors_network:
+    driver: bridge
+
