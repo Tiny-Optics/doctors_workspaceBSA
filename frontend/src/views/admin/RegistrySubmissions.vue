@@ -126,16 +126,7 @@
                 {{ formatDate(submission.createdAt) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center space-x-2">
-                  <span class="text-sm text-gray-900">{{ submission.uploadedDocuments.length }} files</span>
-                  <button
-                    v-if="submission.uploadedDocuments.length > 0"
-                    @click="viewDocuments(submission)"
-                    class="text-blue-600 hover:text-blue-700 text-sm"
-                  >
-                    View
-                  </button>
-                </div>
+                <span class="text-sm text-gray-900">{{ submission.uploadedDocuments.length }} files</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div class="flex items-center space-x-2">
@@ -269,7 +260,13 @@
             <div>
               <h3 class="text-lg font-semibold text-gray-900 mb-4">Form Data</h3>
               <div class="bg-gray-50 rounded-lg p-4">
-                <pre class="text-sm text-gray-900 whitespace-pre-wrap">{{ JSON.stringify(selectedSubmission.formData, null, 2) }}</pre>
+                <div v-if="Object.keys(selectedSubmission.formData || {}).length > 0" class="space-y-3">
+                  <div v-for="(value, key) in selectedSubmission.formData" :key="key" class="border-b border-gray-200 pb-2 last:border-0">
+                    <dt class="text-sm font-medium text-gray-700">{{ formatFieldName(key) }}</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ formatFieldValue(value) }}</dd>
+                  </div>
+                </div>
+                <p v-else class="text-sm text-gray-500 italic">No form data submitted</p>
               </div>
             </div>
 
@@ -408,9 +405,48 @@ function viewDocuments(submission: Submission) {
   console.log('View documents for submission:', submission.id)
 }
 
-function downloadDocument(document: string) {
-  // TODO: Implement document download
-  console.log('Download document:', document)
+async function downloadDocument(documentName: string) {
+  if (!selectedSubmission.value) return
+  
+  try {
+    // Construct the full path to the document
+    const fullPath = `${selectedSubmission.value.documentsPath}/${documentName}`
+    
+    // Use the existing Dropbox service to get download link
+    // We'll need to create a method in the registry service for this
+    const response = await fetch(`/api/registry/document-download?path=${encodeURIComponent(fullPath)}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to get download link')
+    }
+    
+    const data = await response.json()
+    // Open the download link in a new tab
+    window.open(data.link, '_blank')
+  } catch (err: any) {
+    console.error('Failed to download document:', err)
+    toast.error('Failed to download document. Please try again.')
+  }
+}
+
+function formatFieldName(fieldKey: string): string {
+  // Convert camelCase or snake_case to Title Case
+  return fieldKey
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/_/g, ' ')
+    .replace(/^./, str => str.toUpperCase())
+    .trim()
+}
+
+function formatFieldValue(value: any): string {
+  if (value === null || value === undefined) return 'N/A'
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (typeof value === 'object') return JSON.stringify(value, null, 2)
+  return String(value)
 }
 
 function previousPage() {

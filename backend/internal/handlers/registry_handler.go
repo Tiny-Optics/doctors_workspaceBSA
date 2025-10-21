@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -420,13 +422,11 @@ func (h *RegistryHandler) SubmitForm(c *gin.Context) {
 		return
 	}
 
-	// Parse form data JSON
+	// Parse form data JSON from the string
 	var formData map[string]interface{}
-	if err := c.ShouldBindJSON(&struct {
-		FormData map[string]interface{} `json:"formData"`
-	}{FormData: formData}); err != nil {
-		// Try parsing from string
-		formData = make(map[string]interface{})
+	if err := json.Unmarshal([]byte(formDataStr), &formData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("failed to parse form data: %v", err)})
+		return
 	}
 
 	// Get files (accept both "files" and "documents" field names)
@@ -687,6 +687,35 @@ func (h *RegistryHandler) GetExampleDocuments(c *gin.Context) {
 // @Router /registry/example-documents/download [get]
 // @Security BearerAuth
 func (h *RegistryHandler) GetExampleDocumentDownloadLink(c *gin.Context) {
+	filePath := c.Query("path")
+	if filePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file path is required"})
+		return
+	}
+
+	link, err := h.registryService.GetExampleDocumentDownloadLink(c.Request.Context(), filePath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"link": link,
+	})
+}
+
+// GetSubmissionDocumentDownloadLink godoc
+// @Summary Get download link for submission document
+// @Description Get a temporary download link for a specific submission document
+// @Tags registry
+// @Produce json
+// @Param path query string true "Document path"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /registry/document-download [get]
+// @Security BearerAuth
+func (h *RegistryHandler) GetSubmissionDocumentDownloadLink(c *gin.Context) {
 	filePath := c.Query("path")
 	if filePath == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "file path is required"})

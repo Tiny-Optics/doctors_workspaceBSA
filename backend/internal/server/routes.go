@@ -209,6 +209,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 			registry.GET("/submissions/:id", registryHandler.GetSubmission)
 			registry.GET("/example-documents", registryHandler.GetExampleDocuments)
 			registry.GET("/example-documents/download", registryHandler.GetExampleDocumentDownloadLink)
+			registry.GET("/document-download", registryHandler.GetSubmissionDocumentDownloadLink)
 		}
 	}
 
