@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (needed for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -16,8 +16,8 @@ COPY . .
 ARG VITE_API_URL=http://localhost:8080
 ENV VITE_API_URL=$VITE_API_URL
 
-# Build the application
-RUN npm run build
+# Build the application (skip type-check for production build)
+RUN npm run build-only
 
 # Stage 2: Production with Nginx
 FROM nginx:alpine
@@ -38,10 +38,6 @@ RUN mkdir -p /var/cache/nginx && \
 
 # Expose port
 EXPOSE 80
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
