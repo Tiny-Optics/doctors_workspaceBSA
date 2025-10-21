@@ -57,6 +57,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/registry/upload',
+      name: 'registry-upload',
+      component: () => import('../views/registry/UploadApprovals.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/documents',
       name: 'documents',
       component: () => import('../views/ComingSoon.vue'),

@@ -133,7 +133,10 @@
           </div>
 
           <!-- Upload Final Approvals Card -->
-          <div class="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-bloodsa-red transform hover:-translate-y-1 cursor-pointer">
+          <div 
+            @click="$router.push({ name: 'registry-upload' })"
+            class="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-bloodsa-red transform hover:-translate-y-1 cursor-pointer"
+          >
             <div class="p-6">
               <div class="w-full h-48 bg-gradient-to-br from-green-200 to-green-300 rounded-lg flex items-center justify-center mb-6">
                 <div class="text-center">
