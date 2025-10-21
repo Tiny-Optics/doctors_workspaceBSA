@@ -46,7 +46,18 @@
    - Scroll to **Danger Zone**
    - Click **Change visibility** → **Public**
 
-### 4. **Add GitHub Secrets:**
+### 4. **Configure Nginx:**
+   The Nginx configuration is stored in `nginx.conf.production`.
+   
+   To apply it on the VPS:
+   ```bash
+   sudo cp nginx.conf.production /etc/nginx/sites-available/doctors_workspace
+   sudo ln -sf /etc/nginx/sites-available/doctors_workspace /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
+### 5. **Add GitHub Secrets:**
    Go to: `https://github.com/Tiny-Optics/doctors_workspaceBSA/settings/secrets/actions`
    
    Add these secrets:
