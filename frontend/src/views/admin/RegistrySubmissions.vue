@@ -30,6 +30,7 @@
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
           >
             <option value="">All Statuses</option>
+            <option value="submitted">Submitted</option>
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
@@ -348,6 +349,13 @@
               <h3 class="text-lg font-semibold text-gray-900 mb-4">Change Status</h3>
               <div class="flex flex-wrap gap-3">
                 <button
+                  v-if="selectedSubmission.status !== 'submitted'"
+                  @click="changeStatus('submitted')"
+                  class="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
+                >
+                  Mark as Submitted
+                </button>
+                <button
                   v-if="selectedSubmission.status !== 'pending'"
                   @click="changeStatus('pending')"
                   class="px-4 py-2 border border-yellow-300 text-yellow-700 rounded-lg hover:bg-yellow-50 transition-colors"
@@ -500,7 +508,7 @@ function debouncedLoadSubmissions() {
   }, 500)
 }
 
-async function changeStatus(status: 'pending' | 'approved' | 'rejected') {
+async function changeStatus(status: 'submitted' | 'pending' | 'approved' | 'rejected') {
   if (!selectedSubmission.value) return
   
   // For rejection, we need a reason - handled by openRejectModal
@@ -521,7 +529,9 @@ async function changeStatus(status: 'pending' | 'approved' | 'rejected') {
       submissions.value[submissionIndex].status = status
     }
     
-    const statusText = status === 'approved' ? 'approved' : 'marked as pending'
+    const statusText = status === 'approved' ? 'approved' : 
+                      status === 'pending' ? 'marked as pending' : 
+                      'marked as submitted'
     toast.success(`Submission ${statusText} successfully! User has been notified via email.`)
     
     // Close the details modal
@@ -698,12 +708,14 @@ function goToLastPage() {
 
 function getStatusClass(status: string) {
   switch (status) {
+    case 'submitted':
+      return 'bg-blue-100 text-blue-800'
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800'
     case 'approved':
       return 'bg-green-100 text-green-800'
     case 'rejected':
       return 'bg-red-100 text-red-800'
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800'
     default:
       return 'bg-gray-100 text-gray-800'
   }

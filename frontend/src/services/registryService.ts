@@ -78,7 +78,7 @@ export interface Submission {
   formData: Record<string, any>
   documentsPath?: string
   uploadedDocuments: string[]
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'submitted' | 'pending' | 'approved' | 'rejected'
   createdAt: string
   updatedAt: string
   userName?: string
@@ -247,7 +247,7 @@ class RegistryService {
     return handleResponse<{ submissions: Submission[], total: number, page: number, limit: number }>(response)
   }
 
-  async updateSubmissionStatus(id: string, status: 'pending' | 'approved' | 'rejected', reviewNotes?: string): Promise<Submission> {
+  async updateSubmissionStatus(id: string, status: 'submitted' | 'pending' | 'approved' | 'rejected', reviewNotes?: string): Promise<Submission> {
     const body: any = { status }
     if (reviewNotes) {
       body.reviewNotes = reviewNotes

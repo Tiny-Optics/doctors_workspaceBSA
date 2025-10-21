@@ -18,7 +18,7 @@ type SubmissionStatus string
 
 const (
 	SubmissionStatusSubmitted SubmissionStatus = "submitted"
-	SubmissionStatusReviewed  SubmissionStatus = "reviewed"
+	SubmissionStatusPending   SubmissionStatus = "pending"
 	SubmissionStatusApproved  SubmissionStatus = "approved"
 	SubmissionStatusRejected  SubmissionStatus = "rejected"
 )
@@ -26,7 +26,7 @@ const (
 // IsValid checks if the submission status is valid
 func (s SubmissionStatus) IsValid() bool {
 	switch s {
-	case SubmissionStatusSubmitted, SubmissionStatusReviewed, SubmissionStatusApproved, SubmissionStatusRejected:
+	case SubmissionStatusSubmitted, SubmissionStatusPending, SubmissionStatusApproved, SubmissionStatusRejected:
 		return true
 	}
 	return false
