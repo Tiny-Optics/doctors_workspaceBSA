@@ -37,11 +37,11 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">User</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Search User</label>
           <input
-            v-model="filters.userId"
+            v-model="filters.userSearch"
             type="text"
-            placeholder="User ID"
+            placeholder="Search by name or email..."
             @input="debouncedLoadSubmissions"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
           />
@@ -483,7 +483,7 @@ const totalPages = ref(0)
 
 const filters = ref({
   status: '',
-  userId: '',
+  userSearch: '',
   dateFrom: '',
   dateTo: ''
 })
@@ -497,7 +497,7 @@ async function loadSubmissions() {
       page: currentPage.value,
       limit: pageSize.value,
       ...(filters.value.status && { status: filters.value.status }),
-      ...(filters.value.userId && { userId: filters.value.userId }),
+      ...(filters.value.userSearch && { userSearch: filters.value.userSearch }),
       ...(filters.value.dateFrom && { dateFrom: filters.value.dateFrom }),
       ...(filters.value.dateTo && { dateTo: filters.value.dateTo })
     }

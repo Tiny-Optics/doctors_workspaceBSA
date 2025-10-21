@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"backend/internal/models"
@@ -638,6 +639,7 @@ func (s *RegistryService) GetAllSubmissions(
 	user *models.User,
 	page, limit int,
 	filter bson.M,
+	userSearch string,
 ) ([]*models.RegistrySubmission, int64, error) {
 	// Check admin permission
 	if !user.HasPermission(models.PermManageUsers) {
@@ -650,6 +652,7 @@ func (s *RegistryService) GetAllSubmissions(
 	}
 
 	// Populate user and form information for each submission
+	filteredSubmissions := []*models.RegistrySubmission{}
 	for _, submission := range submissions {
 		// Get user information
 		submittedUser, err := s.userRepo.FindByID(ctx, submission.UserID)
@@ -663,9 +666,28 @@ func (s *RegistryService) GetAllSubmissions(
 		if err == nil {
 			submission.FormName = formSchema.FormName
 		}
+		
+		// Apply user search filter if provided
+		if userSearch != "" {
+			searchLower := strings.ToLower(userSearch)
+			userNameLower := strings.ToLower(submission.UserName)
+			userEmailLower := strings.ToLower(submission.UserEmail)
+			
+			if strings.Contains(userNameLower, searchLower) || strings.Contains(userEmailLower, searchLower) {
+				filteredSubmissions = append(filteredSubmissions, submission)
+			}
+		} else {
+			filteredSubmissions = append(filteredSubmissions, submission)
+		}
 	}
 
-	return submissions, total, nil
+	// Update total if filtering was applied
+	filteredTotal := int64(len(filteredSubmissions))
+	if userSearch != "" {
+		return filteredSubmissions, filteredTotal, nil
+	}
+
+	return filteredSubmissions, total, nil
 }
 
 // GetSubmission retrieves a specific submission

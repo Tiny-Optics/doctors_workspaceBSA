@@ -540,8 +540,11 @@ func (h *RegistryHandler) GetAllSubmissions(c *gin.Context) {
 	if status := c.Query("status"); status != "" {
 		filter["status"] = status
 	}
+	
+	// Get user search parameter
+	userSearch := c.Query("userSearch")
 
-	submissions, total, err := h.registryService.GetAllSubmissions(c.Request.Context(), user, page, limit, filter)
+	submissions, total, err := h.registryService.GetAllSubmissions(c.Request.Context(), user, page, limit, filter, userSearch)
 	if err != nil {
 		statusCode := http.StatusInternalServerError
 		if err == service.ErrUnauthorizedRegistryAccess {
