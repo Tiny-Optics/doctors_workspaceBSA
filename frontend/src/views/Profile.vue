@@ -9,7 +9,7 @@
             <div class="w-20 h-20 bg-bloodsa-red rounded-full flex items-center justify-center text-white text-3xl font-bold">
               {{ userInitials }}
             </div>
-            <!-- User Info -->
+            <!-- User Info --> 
             <div>
               <h1 class="text-3xl font-bold text-gray-900">{{ userFullName }}</h1>
               <div class="flex items-center space-x-3 mt-2">
