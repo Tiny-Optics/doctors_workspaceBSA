@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"backend/internal/middleware"
 	"backend/internal/models"
@@ -540,24 +541,38 @@ func (h *RegistryHandler) GetAllSubmissions(c *gin.Context) {
 	if status := c.Query("status"); status != "" {
 		filter["status"] = status
 	}
-	
+
 	// Add date range filter
 	if dateFrom := c.Query("dateFrom"); dateFrom != "" {
-		if dateTo := c.Query("dateTo"); dateTo != "" {
-			// Both dates provided - filter between range
-			filter["created_at"] = bson.M{
-				"$gte": dateFrom + "T00:00:00Z",
-				"$lte": dateTo + "T23:59:59Z",
+		// Parse the from date
+		fromTime, err := time.Parse("2006-01-02", dateFrom)
+		if err == nil {
+			if dateTo := c.Query("dateTo"); dateTo != "" {
+				// Both dates provided - filter between range
+				toTime, err := time.Parse("2006-01-02", dateTo)
+				if err == nil {
+					// Add 1 day to toTime to include the entire end date
+					toTime = toTime.Add(24 * time.Hour)
+					filter["created_at"] = bson.M{
+						"$gte": fromTime,
+						"$lt":  toTime,
+					}
+				}
+			} else {
+				// Only from date - filter from date onwards
+				filter["created_at"] = bson.M{"$gte": fromTime}
 			}
-		} else {
-			// Only from date - filter from date onwards
-			filter["created_at"] = bson.M{"$gte": dateFrom + "T00:00:00Z"}
 		}
 	} else if dateTo := c.Query("dateTo"); dateTo != "" {
 		// Only to date - filter up to date
-		filter["created_at"] = bson.M{"$lte": dateTo + "T23:59:59Z"}
+		toTime, err := time.Parse("2006-01-02", dateTo)
+		if err == nil {
+			// Add 1 day to include the entire end date
+			toTime = toTime.Add(24 * time.Hour)
+			filter["created_at"] = bson.M{"$lt": toTime}
+		}
 	}
-	
+
 	// Get user search parameter
 	userSearch := c.Query("userSearch")
 
