@@ -565,7 +565,8 @@ func (s *RegistryService) sendSubmissionNotification(
 	}
 
 	// Get Dropbox shared link for the folder
-	dropboxLink := fmt.Sprintf("https://www.dropbox.com/home/%s", submission.DocumentsPath)
+	// The path needs to include the app directory structure
+	dropboxLink := fmt.Sprintf("https://www.dropbox.com/home/BLOODSA%%20Administrator/Apps/Doctors%%20Workspace/%s", submission.DocumentsPath)
 
 	// Prepare email data
 	emailData := SubmissionNotificationData{
