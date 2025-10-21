@@ -81,6 +81,9 @@ export interface Submission {
   status: 'pending' | 'approved' | 'rejected'
   createdAt: string
   updatedAt: string
+  userName?: string
+  userEmail?: string
+  formName?: string
 }
 
 class RegistryService {

@@ -607,7 +607,28 @@ func (s *RegistryService) GetAllSubmissions(
 		return nil, 0, ErrUnauthorizedRegistryAccess
 	}
 
-	return s.submissionRepo.List(ctx, page, limit, filter)
+	submissions, total, err := s.submissionRepo.List(ctx, page, limit, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Populate user and form information for each submission
+	for _, submission := range submissions {
+		// Get user information
+		submittedUser, err := s.userRepo.FindByID(ctx, submission.UserID)
+		if err == nil {
+			submission.UserName = submittedUser.Profile.FirstName + " " + submittedUser.Profile.LastName
+			submission.UserEmail = submittedUser.Email
+		}
+
+		// Get form information
+		formSchema, err := s.formRepo.FindByID(ctx, submission.FormSchemaID)
+		if err == nil {
+			submission.FormName = formSchema.FormName
+		}
+	}
+
+	return submissions, total, nil
 }
 
 // GetSubmission retrieves a specific submission

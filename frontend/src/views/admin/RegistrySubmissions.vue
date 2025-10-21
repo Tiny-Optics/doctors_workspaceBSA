@@ -102,17 +102,17 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="w-10 h-10 bg-bloodsa-red rounded-full flex items-center justify-center text-white text-sm font-medium">
-                    {{ getUserInitials(submission.userId) }}
+                    {{ getUserInitials(submission.userName || submission.userId) }}
                   </div>
                   <div class="ml-4">
-                    <div class="text-sm font-medium text-gray-900">{{ submission.userId }}</div>
-                    <div class="text-sm text-gray-500">User ID</div>
+                    <div class="text-sm font-medium text-gray-900">{{ submission.userName || submission.userId }}</div>
+                    <div class="text-sm text-gray-500">{{ submission.userEmail || 'User' }}</div>
                   </div>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">{{ getFormName(submission.formSchemaId) }}</div>
-                <div class="text-sm text-gray-500">Form Schema</div>
+                <div class="text-sm text-gray-900">{{ submission.formName || submission.formSchemaId }}</div>
+                <div class="text-sm text-gray-500">Form</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span
@@ -440,12 +440,21 @@ function getStatusClass(status: string) {
   }
 }
 
-function getUserInitials(userId: string) {
-  return userId.substring(0, 2).toUpperCase()
+function getUserInitials(userNameOrId: string) {
+  if (!userNameOrId) return '??'
+  
+  // If it looks like a name (contains space), get initials from first and last name
+  if (userNameOrId.includes(' ')) {
+    const names = userNameOrId.split(' ')
+    return (names[0]?.[0] || '') + (names[names.length - 1]?.[0] || '')
+  }
+  
+  // Otherwise, use first two characters (for user IDs)
+  return userNameOrId.substring(0, 2).toUpperCase()
 }
 
 function getFormName(formSchemaId: string) {
-  // TODO: Get form name from form schema
+  // This is now handled by the backend populating formName
   return formSchemaId
 }
 

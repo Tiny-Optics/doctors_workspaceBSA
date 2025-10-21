@@ -79,8 +79,7 @@
           </div>
           <h3 class="text-2xl font-bold text-gray-900 mb-4">Application Submitted Successfully!</h3>
           <p class="text-gray-600 mb-6">
-            Your submission has been received and will be reviewed by the administrators. 
-            You will receive a confirmation email shortly with the details.
+            Your submission has been received and will be reviewed by the administrators.
           </p>
           <button
             @click="$router.push({ name: 'registry' })"
