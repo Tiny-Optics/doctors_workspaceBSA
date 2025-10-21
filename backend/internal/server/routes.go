@@ -16,8 +16,8 @@ import (
 func (s *Server) RegisterRoutes() http.Handler {
 	r := gin.Default()
 
-	// Disable client IP validation when behind Nginx proxy
-	r.ForwardedByClientIP = false
+	// Trust all proxies (we're behind Nginx)
+	r.SetTrustedProxies(nil)
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "http://169.255.58.102"}, // Dev and production URLs
