@@ -105,6 +105,14 @@ var (
 	usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_]{3,50}$`)
 )
 
+// ValidateEmail validates an email address format
+func ValidateEmail(email string) error {
+	if !emailRegex.MatchString(email) {
+		return ErrInvalidEmail
+	}
+	return nil
+}
+
 // Validate validates the CreateUserRequest
 func (req *CreateUserRequest) Validate() error {
 	// Validate email
