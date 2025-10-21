@@ -46,8 +46,8 @@
           class="flex items-center rounded-lg transition-all duration-200 group relative overflow-visible"
           :class="[
             { 
-              'bg-bloodsa-red text-white shadow-md': $route.path === item.to,
-              'text-gray-700 hover:bg-bloodsa-red hover:text-white': $route.path !== item.to
+              'bg-bloodsa-red text-white shadow-md': isActiveRoute(item),
+              'text-gray-700 hover:bg-bloodsa-red hover:text-white': !isActiveRoute(item)
             },
             isCollapsed ? 'justify-center px-3 py-3' : 'space-x-3 px-4 py-3'
           ]"
@@ -55,7 +55,7 @@
         >
           <!-- Active indicator bar (left side) -->
           <div 
-            v-if="isCollapsed && $route.path === item.to"
+            v-if="isCollapsed && isActiveRoute(item)"
             class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"
           ></div>
           
@@ -66,8 +66,8 @@
             :class="[
               isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
               { 
-                'text-white': $route.path === item.to,
-                'text-gray-600 group-hover:text-white': $route.path !== item.to
+                'text-white': isActiveRoute(item),
+                'text-gray-600 group-hover:text-white': !isActiveRoute(item)
               }
             ]"
             fill="none" 
@@ -84,8 +84,8 @@
             :class="[
               isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
               { 
-                'text-white': $route.path === item.to,
-                'text-gray-600 group-hover:text-white': $route.path !== item.to
+                'text-white': isActiveRoute(item),
+                'text-gray-600 group-hover:text-white': !isActiveRoute(item)
               }
             ]"
             fill="none" 
@@ -102,8 +102,8 @@
             :class="[
               isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
               { 
-                'text-white': $route.path === item.to,
-                'text-gray-600 group-hover:text-white': $route.path !== item.to
+                'text-white': isActiveRoute(item),
+                'text-gray-600 group-hover:text-white': !isActiveRoute(item)
               }
             ]"
             fill="none" 
@@ -120,8 +120,8 @@
             :class="[
               isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
               { 
-                'text-white': $route.path === item.to,
-                'text-gray-600 group-hover:text-white': $route.path !== item.to
+                'text-white': isActiveRoute(item),
+                'text-gray-600 group-hover:text-white': !isActiveRoute(item)
               }
             ]"
             fill="none" 
@@ -139,8 +139,8 @@
             :class="[
               isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
               { 
-                'text-white': $route.path === item.to,
-                'text-gray-600 group-hover:text-white': $route.path !== item.to
+                'text-white': isActiveRoute(item),
+                'text-gray-600 group-hover:text-white': !isActiveRoute(item)
               }
             ]"
             fill="none" 
@@ -157,8 +157,8 @@
             :class="[
               isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
               { 
-                'text-white': $route.path === item.to || $route.path.startsWith('/admin/registry'),
-                'text-gray-600 group-hover:text-white': !($route.path === item.to || $route.path.startsWith('/admin/registry'))
+                'text-white': isActiveRoute(item),
+                'text-gray-600 group-hover:text-white': !isActiveRoute(item)
               }
             ]"
             fill="none" 
@@ -175,8 +175,8 @@
             :class="[
               isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
               { 
-                'text-white': $route.path === item.to,
-                'text-gray-600 group-hover:text-white': $route.path !== item.to
+                'text-white': isActiveRoute(item),
+                'text-gray-600 group-hover:text-white': !isActiveRoute(item)
               }
             ]"
             fill="none" 
@@ -216,11 +216,24 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getUserRoleDisplayName } from '@/types/user'
 
+const route = useRoute()
+
 // Sidebar collapse state
 const isCollapsed = ref(false)
+
+// Helper function to check if a route is active (including sub-routes)
+const isActiveRoute = (item: { name: string; to: string }) => {
+  // For Registry Settings, match all /admin/registry/* paths
+  if (item.to === '/admin/registry') {
+    return route.path.startsWith('/admin/registry')
+  }
+  // For other routes, exact match
+  return route.path === item.to
+}
 
 // Load collapse state from localStorage
 onMounted(() => {
