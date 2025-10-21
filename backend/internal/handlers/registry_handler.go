@@ -436,7 +436,7 @@ func (h *RegistryHandler) SubmitForm(c *gin.Context) {
 		// Try alternative field name for backwards compatibility
 		files = form.File["documents"]
 	}
-	
+
 	// Note: We don't require files here - the service layer will validate
 	// based on the form schema's required file fields
 
@@ -539,6 +539,23 @@ func (h *RegistryHandler) GetAllSubmissions(c *gin.Context) {
 	filter := bson.M{}
 	if status := c.Query("status"); status != "" {
 		filter["status"] = status
+	}
+	
+	// Add date range filter
+	if dateFrom := c.Query("dateFrom"); dateFrom != "" {
+		if dateTo := c.Query("dateTo"); dateTo != "" {
+			// Both dates provided - filter between range
+			filter["created_at"] = bson.M{
+				"$gte": dateFrom + "T00:00:00Z",
+				"$lte": dateTo + "T23:59:59Z",
+			}
+		} else {
+			// Only from date - filter from date onwards
+			filter["created_at"] = bson.M{"$gte": dateFrom + "T00:00:00Z"}
+		}
+	} else if dateTo := c.Query("dateTo"); dateTo != "" {
+		// Only to date - filter up to date
+		filter["created_at"] = bson.M{"$lte": dateTo + "T23:59:59Z"}
 	}
 	
 	// Get user search parameter
