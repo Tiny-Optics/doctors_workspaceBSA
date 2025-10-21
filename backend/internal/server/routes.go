@@ -16,6 +16,9 @@ import (
 func (s *Server) RegisterRoutes() http.Handler {
 	r := gin.Default()
 
+	// Trust Nginx proxy
+	r.SetTrustedProxies([]string{"127.0.0.1", "::1", "172.18.0.0/16"})
+
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "http://169.255.58.102"}, // Dev and production URLs
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
