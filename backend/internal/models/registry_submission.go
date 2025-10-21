@@ -46,11 +46,11 @@ type RegistrySubmission struct {
 	ReviewedBy        *primitive.ObjectID    `bson:"reviewed_by,omitempty" json:"reviewedBy,omitempty"`
 	ReviewedAt        *time.Time             `bson:"reviewed_at,omitempty" json:"reviewedAt,omitempty"`
 	ReviewNotes       string                 `bson:"review_notes,omitempty" json:"reviewNotes,omitempty"`
-	
+
 	// Populated fields (not stored in DB, only for API responses)
-	UserName string `bson:"-" json:"userName,omitempty"`
+	UserName  string `bson:"-" json:"userName,omitempty"`
 	UserEmail string `bson:"-" json:"userEmail,omitempty"`
-	FormName string `bson:"-" json:"formName,omitempty"`
+	FormName  string `bson:"-" json:"formName,omitempty"`
 }
 
 // CreateSubmissionRequest represents the request to create a submission

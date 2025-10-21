@@ -666,13 +666,13 @@ func (s *RegistryService) GetAllSubmissions(
 		if err == nil {
 			submission.FormName = formSchema.FormName
 		}
-		
+
 		// Apply user search filter if provided
 		if userSearch != "" {
 			searchLower := strings.ToLower(userSearch)
 			userNameLower := strings.ToLower(submission.UserName)
 			userEmailLower := strings.ToLower(submission.UserEmail)
-			
+
 			if strings.Contains(userNameLower, searchLower) || strings.Contains(userEmailLower, searchLower) {
 				filteredSubmissions = append(filteredSubmissions, submission)
 			}
