@@ -281,6 +281,32 @@ func (s *DropboxService) CreateFolder(relativePath string) error {
 	return nil
 }
 
+// UploadFile uploads a file to Dropbox
+func (s *DropboxService) UploadFile(ctx context.Context, file io.Reader, remotePath string) error {
+	if err := s.ensureValidToken(ctx); err != nil {
+		return err
+	}
+
+	s.cacheMutex.RLock()
+	client := s.cachedClient
+	parentFolder := s.cachedConfig.ParentFolder
+	s.cacheMutex.RUnlock()
+
+	fullPath := s.getFullPath(remotePath, parentFolder)
+
+	// Create upload argument
+	uploadArg := files.NewUploadArg(fullPath)
+	uploadArg.Mode = &files.WriteMode{Tagged: dropbox.Tagged{Tag: "overwrite"}}
+
+	// Upload the file
+	_, err := client.Upload(uploadArg, file)
+	if err != nil {
+		return fmt.Errorf("failed to upload file to Dropbox: %w", err)
+	}
+
+	return nil
+}
+
 // ListFiles lists all files in a Dropbox folder
 func (s *DropboxService) ListFiles(relativePath string) ([]DropboxFileInfo, error) {
 	ctx := context.Background()

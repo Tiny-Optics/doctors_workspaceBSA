@@ -24,5 +24,15 @@ export default defineConfig({
     hmr: {
       host: 'localhost',
     },
+    // Only add proxy in development mode (when running in Docker dev environment)
+    ...(process.env.NODE_ENV === 'development' && {
+      proxy: {
+        '/api': {
+          target: process.env.VITE_API_URL || 'http://localhost:8080',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    }),
   },
 })

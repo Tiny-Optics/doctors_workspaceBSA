@@ -16,9 +16,6 @@ import (
 func (s *Server) RegisterRoutes() http.Handler {
 	r := gin.Default()
 
-	// Trust all proxies (we're behind Nginx)
-	r.SetTrustedProxies(nil)
-
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "http://169.255.58.102"}, // Dev and production URLs
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
@@ -43,6 +40,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 	institutionRepo := repository.NewInstitutionRepository(db)
 	sopCategoryRepo := repository.NewSOPCategoryRepository(db)
 	dropboxConfigRepo := repository.NewDropboxConfigRepository(db)
+	registryConfigRepo := repository.NewRegistryConfigRepository(db)
+	registryFormRepo := repository.NewRegistryFormRepository(db)
+	registrySubmissionRepo := repository.NewRegistrySubmissionRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
@@ -61,6 +61,18 @@ func (s *Server) RegisterRoutes() http.Handler {
 	dropboxOAuthService := service.NewDropboxOAuthService(dropboxConfigRepo, auditRepo, encryptionService, dropboxService)
 	sopCategoryService := service.NewSOPCategoryService(sopCategoryRepo, dropboxService, auditRepo, userRepo)
 
+	// Initialize email and registry services
+	emailService := service.NewEmailService(encryptionService)
+	registryService := service.NewRegistryService(
+		registryConfigRepo,
+		registryFormRepo,
+		registrySubmissionRepo,
+		userRepo,
+		auditRepo,
+		dropboxService,
+		emailService,
+	)
+
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
@@ -68,6 +80,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	statsHandler := handlers.NewStatsHandler(userService, institutionService, auditService, sopCategoryService)
 	sopCategoryHandler := handlers.NewSOPCategoryHandler(sopCategoryService)
 	dropboxAdminHandler := handlers.NewDropboxAdminHandler(dropboxOAuthService)
+	registryHandler := handlers.NewRegistryHandler(registryService, encryptionService)
 
 	// API routes group
 	api := r.Group("/api")
@@ -161,6 +174,42 @@ func (s *Server) RegisterRoutes() http.Handler {
 				dropbox.POST("/test", dropboxAdminHandler.TestConnection)
 				dropbox.DELETE("/configuration", dropboxAdminHandler.DeleteConfiguration)
 			}
+
+			// Registry configuration (super admin only)
+			registry := admin.Group("/registry")
+			{
+				registry.GET("/config", registryHandler.GetConfiguration)
+				registry.PUT("/config", registryHandler.UpdateConfiguration)
+				registry.POST("/test-email", registryHandler.SendTestEmail)
+				registry.GET("/submissions", registryHandler.GetAllSubmissions)
+				registry.PATCH("/submissions/:id/status", registryHandler.UpdateSubmissionStatus)
+			}
+		}
+
+		// Admin routes for registry form management (admins and user managers)
+		registryAdmin := api.Group("/admin/registry")
+		registryAdmin.Use(middleware.AuthMiddleware(authService))
+		registryAdmin.Use(middleware.RequirePermission(models.PermManageUsers))
+		{
+			registryAdmin.POST("/form-schema", registryHandler.CreateFormSchema)
+			registryAdmin.GET("/form-schemas", registryHandler.ListFormSchemas)
+			registryAdmin.GET("/form-schema/:id", registryHandler.GetFormSchema)
+			registryAdmin.PUT("/form-schema/:id", registryHandler.UpdateFormSchema)
+			registryAdmin.DELETE("/form-schema/:id", registryHandler.DeleteFormSchema)
+		}
+
+		// Registry routes (authenticated users)
+		registry := api.Group("/registry")
+		registry.Use(middleware.AuthMiddleware(authService))
+		{
+			registry.GET("/config", registryHandler.GetPublicConfiguration)
+			registry.GET("/form-schema", registryHandler.GetActiveFormSchema)
+			registry.POST("/submit", registryHandler.SubmitForm)
+			registry.GET("/submissions", registryHandler.GetUserSubmissions)
+			registry.GET("/submissions/:id", registryHandler.GetSubmission)
+			registry.GET("/example-documents", registryHandler.GetExampleDocuments)
+			registry.GET("/example-documents/download", registryHandler.GetExampleDocumentDownloadLink)
+			registry.GET("/document-download", registryHandler.GetSubmissionDocumentDownloadLink)
 		}
 	}
 

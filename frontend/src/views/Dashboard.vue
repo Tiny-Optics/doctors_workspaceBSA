@@ -4,7 +4,7 @@
     <section class="relative overflow-hidden bg-white">
       <!-- Background Pattern -->
       <div class="absolute inset-0 opacity-5">
-        <div class="absolute inset-0" style="background-image: repeating-linear-gradient(45deg, #8B0000 0, #8B0000 1px, transparent 0, transparent 50%); background-size: 10px 10px;"></div>
+        <div class="absolute inset-0 bg-pattern"></div>
       </div>
 
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
@@ -95,13 +95,13 @@
     </section>
 
     <!-- Main Content Section -->
-    <section class="py-12 bg-white">
+    <section class="py-12 bg-bloodsa-red">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
-          <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
             What would you like to do?
           </h2>
-          <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p class="text-lg text-white max-w-2xl mx-auto">
             Access your clinical tools and resources to manage workflows efficiently
           </p>
         </div>
@@ -173,54 +173,6 @@
               </p>
               <div class="flex items-center text-purple-600 font-medium group-hover:text-purple-700">
                 View Registry
-                <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-          </router-link>
-
-          <!-- Document Library Card -->
-          <router-link
-            to="/documents"
-            class="group bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-blue-500 transform hover:-translate-y-1"
-          >
-            <div class="p-8">
-              <div class="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-              </div>
-              <h3 class="text-xl font-semibold text-gray-900 mb-3">Document Library</h3>
-              <p class="text-gray-600 mb-6 leading-relaxed">
-                Access and manage all clinical documents and resources with secure storage.
-              </p>
-              <div class="flex items-center text-blue-600 font-medium group-hover:text-blue-700">
-                Browse Documents
-                <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-          </router-link>
-
-          <!-- Training Resources Card -->
-          <router-link
-            to="/training"
-            class="group bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-yellow-500 transform hover:-translate-y-1"
-          >
-            <div class="p-8">
-              <div class="w-16 h-16 bg-yellow-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <h3 class="text-xl font-semibold text-gray-900 mb-3">Training Resources</h3>
-              <p class="text-gray-600 mb-6 leading-relaxed">
-                Access video tutorials, guidelines, and training materials to enhance your practice.
-              </p>
-              <div class="flex items-center text-yellow-600 font-medium group-hover:text-yellow-700">
-                View Training
                 <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                 </svg>
@@ -352,4 +304,11 @@ onMounted(async () => {
   loadSystemStats()
 })
 </script>
+
+<style scoped>
+.bg-pattern {
+  background-image: repeating-linear-gradient(45deg, #8B0000 0, #8B0000 1px, transparent 0, transparent 50%);
+  background-size: 10px 10px;
+}
+</style>
 
