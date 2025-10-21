@@ -66,8 +66,66 @@
       </div>
     </section>
 
+    <!-- Success State -->
+    <section v-else-if="submissionSuccess" class="py-12">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+          <div class="mb-6">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
+              <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-4">Application Submitted Successfully!</h3>
+          <p class="text-gray-600 mb-6">
+            Your submission has been received and will be reviewed by the administrators. 
+            You will receive a confirmation email shortly with the details.
+          </p>
+          <button
+            @click="$router.push({ name: 'registry' })"
+            class="px-6 py-3 bg-bloodsa-red text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+          >
+            Return to Registry
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Submission Error State -->
+    <section v-else-if="submissionError" class="py-12">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+          <div class="mb-6">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+              <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900 mb-4">Submission Failed</h3>
+          <p class="text-gray-600 mb-2">{{ submissionErrorMessage }}</p>
+          <p class="text-sm text-gray-500 mb-6">Please try again or contact support if the problem persists.</p>
+          <div class="flex gap-4 justify-center">
+            <button
+              @click="resetSubmission"
+              class="px-6 py-3 bg-bloodsa-red text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+            >
+              Try Again
+            </button>
+            <button
+              @click="$router.push({ name: 'registry' })"
+              class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            >
+              Return to Registry
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Form Section -->
-    <section v-else class="py-12">
+    <section v-else-if="activeForm && !submissionSuccess && !submissionError" class="py-12">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="bg-white rounded-xl shadow-lg p-8">
           <!-- Form Header -->
@@ -293,6 +351,9 @@ const activeForm = ref<FormSchema | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const submitting = ref(false)
+const submissionSuccess = ref(false)
+const submissionError = ref(false)
+const submissionErrorMessage = ref('')
 
 const formData = ref<Record<string, any>>({})
 const uploadedFiles = ref<Record<string, File[]>>({})
@@ -458,19 +519,26 @@ async function handleSubmit() {
       files: allFiles
     })
 
-    showToast('Application submitted successfully! You will receive a confirmation email shortly.', 'success')
-    
-    // Redirect to submissions page after a short delay
-    setTimeout(() => {
-      router.push({ name: 'registry' })
-    }, 2000)
+    // Show success state
+    submissionSuccess.value = true
+    submissionError.value = false
 
   } catch (err: any) {
     console.error('Failed to submit form:', err)
-    showToast(err.message || 'Failed to submit application. Please try again.', 'error')
+    // Show error state
+    submissionSuccess.value = false
+    submissionError.value = true
+    submissionErrorMessage.value = err.message || 'Failed to submit application. Please try again.'
   } finally {
     submitting.value = false
   }
+}
+
+function resetSubmission() {
+  submissionError.value = false
+  submissionErrorMessage.value = ''
+  // Clear form and reset to initial state
+  loadActiveForm()
 }
 
 onMounted(() => {
