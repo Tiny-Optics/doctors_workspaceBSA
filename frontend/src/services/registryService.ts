@@ -247,11 +247,16 @@ class RegistryService {
     return handleResponse<{ submissions: Submission[], total: number, page: number, limit: number }>(response)
   }
 
-  async updateSubmissionStatus(id: string, status: 'pending' | 'approved' | 'rejected'): Promise<Submission> {
+  async updateSubmissionStatus(id: string, status: 'pending' | 'approved' | 'rejected', reviewNotes?: string): Promise<Submission> {
+    const body: any = { status }
+    if (reviewNotes) {
+      body.reviewNotes = reviewNotes
+    }
+    
     const response = await fetch(`${API_URL}/admin/registry/submissions/${id}/status`, {
       method: 'PATCH',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ status })
+      body: JSON.stringify(body)
     })
     return handleResponse<Submission>(response)
   }

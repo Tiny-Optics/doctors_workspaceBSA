@@ -221,3 +221,120 @@ func (s *EmailService) SendTestEmail(smtpConfig models.SMTPConfig, recipient str
 
 	return nil
 }
+
+// SendStatusChangeNotification sends email to user when their submission status changes
+func (s *EmailService) SendStatusChangeNotification(
+	smtpConfig models.SMTPConfig,
+	userEmail string,
+	userName string,
+	formName string,
+	status string,
+	reviewNotes string,
+	submissionID string,
+) error {
+	// Validate SMTP config
+	if !smtpConfig.IsComplete() {
+		return ErrIncompleteSMTPConfig
+	}
+
+	// Decrypt password
+	decryptedPassword, err := s.encryptionService.Decrypt(smtpConfig.Password)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt SMTP password: %w", err)
+	}
+
+	// Prepare email subject and body based on status
+	var subject string
+	var emailBody string
+
+	switch status {
+	case "approved":
+		subject = "Your Registry Submission Has Been Approved"
+		emailBody = fmt.Sprintf(`
+			<html>
+			<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+				<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+					<h2 style="color: #059669;">Submission Approved</h2>
+					<p>Dear %s,</p>
+					<p>We are pleased to inform you that your submission for <strong>%s</strong> has been approved.</p>
+					<div style="background-color: #f0fdf4; border-left: 4px solid #059669; padding: 15px; margin: 20px 0;">
+						<p style="margin: 0;"><strong>Submission ID:</strong> %s</p>
+						<p style="margin: 5px 0 0 0;"><strong>Status:</strong> <span style="color: #059669;">Approved</span></p>
+					</div>
+					<p>Thank you for your submission.</p>
+					<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+					<p style="font-size: 12px; color: #6b7280;">
+						This is an automated message from the BLOODSA Doctor's Workspace African HOPeR Registry system.
+					</p>
+				</div>
+			</body>
+			</html>
+		`, userName, formName, submissionID)
+
+	case "rejected":
+		subject = "Your Registry Submission Has Been Rejected"
+		emailBody = fmt.Sprintf(`
+			<html>
+			<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+				<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+					<h2 style="color: #dc2626;">Submission Rejected</h2>
+					<p>Dear %s,</p>
+					<p>We regret to inform you that your submission for <strong>%s</strong> has been rejected.</p>
+					<div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
+						<p style="margin: 0;"><strong>Submission ID:</strong> %s</p>
+						<p style="margin: 5px 0;"><strong>Status:</strong> <span style="color: #dc2626;">Rejected</span></p>
+						<p style="margin: 5px 0 0 0;"><strong>Reason:</strong></p>
+						<p style="margin: 5px 0 0 0; padding: 10px; background-color: white; border-radius: 4px;">%s</p>
+					</div>
+					<p>If you have any questions or would like to discuss this further, please contact the administrator.</p>
+					<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+					<p style="font-size: 12px; color: #6b7280;">
+						This is an automated message from the BLOODSA Doctor's Workspace African HOPeR Registry system.
+					</p>
+				</div>
+			</body>
+			</html>
+		`, userName, formName, submissionID, reviewNotes)
+
+	case "pending":
+		subject = "Your Registry Submission Status Has Been Updated"
+		emailBody = fmt.Sprintf(`
+			<html>
+			<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+				<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+					<h2 style="color: #d97706;">Submission Status Update</h2>
+					<p>Dear %s,</p>
+					<p>The status of your submission for <strong>%s</strong> has been updated to pending review.</p>
+					<div style="background-color: #fffbeb; border-left: 4px solid #d97706; padding: 15px; margin: 20px 0;">
+						<p style="margin: 0;"><strong>Submission ID:</strong> %s</p>
+						<p style="margin: 5px 0 0 0;"><strong>Status:</strong> <span style="color: #d97706;">Pending Review</span></p>
+					</div>
+					<p>We will notify you once your submission has been reviewed.</p>
+					<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+					<p style="font-size: 12px; color: #6b7280;">
+						This is an automated message from the BLOODSA Doctor's Workspace African HOPeR Registry system.
+					</p>
+				</div>
+			</body>
+			</html>
+		`, userName, formName, submissionID)
+
+	default:
+		return fmt.Errorf("unknown status: %s", status)
+	}
+
+	// Create email message
+	m := gomail.NewMessage()
+	m.SetHeader("From", smtpConfig.FromEmail)
+	m.SetHeader("To", userEmail)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", emailBody)
+
+	// Send email
+	d := gomail.NewDialer(smtpConfig.Host, smtpConfig.Port, smtpConfig.Username, decryptedPassword)
+	if err := d.DialAndSend(m); err != nil {
+		return fmt.Errorf("%w: %v", ErrEmailSendFailed, err)
+	}
+
+	return nil
+}

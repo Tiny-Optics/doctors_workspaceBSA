@@ -586,6 +586,43 @@ func (s *RegistryService) sendSubmissionNotification(
 	)
 }
 
+// sendStatusChangeNotification sends email to user when submission status changes
+func (s *RegistryService) sendStatusChangeNotification(
+	ctx context.Context,
+	submission *models.RegistrySubmission,
+	newStatus models.SubmissionStatus,
+	reviewNotes string,
+) error {
+	// Get config for SMTP
+	config, err := s.configRepo.GetConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Get user information
+	user, err := s.userRepo.FindByID(ctx, submission.UserID)
+	if err != nil {
+		return err
+	}
+
+	// Get form schema for form name
+	formSchema, err := s.formRepo.FindByID(ctx, submission.FormSchemaID)
+	if err != nil {
+		return err
+	}
+
+	// Send email based on status
+	return s.emailService.SendStatusChangeNotification(
+		config.SMTPConfig,
+		user.Email,
+		user.Profile.FirstName+" "+user.Profile.LastName,
+		formSchema.FormName,
+		string(newStatus),
+		reviewNotes,
+		submission.ID.Hex(),
+	)
+}
+
 // GetUserSubmissions retrieves submissions for a specific user
 func (s *RegistryService) GetUserSubmissions(
 	ctx context.Context,
@@ -691,6 +728,12 @@ func (s *RegistryService) UpdateSubmissionStatus(
 		IPAddress: ipAddress,
 		Timestamp: time.Now(),
 	})
+
+	// Send email notification to user about status change
+	if err := s.sendStatusChangeNotification(ctx, submission, req.Status, req.ReviewNotes); err != nil {
+		// Log error but don't fail the status update
+		fmt.Printf("Warning: Failed to send status change notification: %v\n", err)
+	}
 
 	return submission, nil
 }

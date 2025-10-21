@@ -267,8 +267,8 @@
     </div>
 
     <!-- Submission Details Modal -->
-    <div v-if="selectedSubmission" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div v-if="selectedSubmission" @click="selectedSubmission = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div @click.stop class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-gray-900">Submission Details</h2>
@@ -343,21 +343,88 @@
               </div>
             </div>
 
-            <!-- Actions -->
-            <div v-if="selectedSubmission.status === 'pending'" class="flex justify-end space-x-4">
-              <button
-                @click="updateStatus(selectedSubmission, 'rejected')"
-                class="px-6 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
-              >
-                Reject
-              </button>
-              <button
-                @click="updateStatus(selectedSubmission, 'approved')"
-                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Approve
-              </button>
+            <!-- Status Change Actions -->
+            <div class="border-t pt-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Change Status</h3>
+              <div class="flex flex-wrap gap-3">
+                <button
+                  v-if="selectedSubmission.status !== 'pending'"
+                  @click="changeStatus('pending')"
+                  class="px-4 py-2 border border-yellow-300 text-yellow-700 rounded-lg hover:bg-yellow-50 transition-colors"
+                >
+                  Mark as Pending
+                </button>
+                <button
+                  v-if="selectedSubmission.status !== 'approved'"
+                  @click="changeStatus('approved')"
+                  class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Approve
+                </button>
+                <button
+                  v-if="selectedSubmission.status !== 'rejected'"
+                  @click="openRejectModal()"
+                  class="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  Reject
+                </button>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reject Reason Modal -->
+    <div v-if="showRejectModal" @click="closeRejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div @click.stop class="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Reject Submission</h3>
+            <button
+              @click="closeRejectModal"
+              class="text-gray-400 hover:text-gray-600"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Rejection Reason <span class="text-red-500">*</span>
+            </label>
+            <textarea
+              v-model="rejectionReason"
+              rows="4"
+              placeholder="Please provide a reason for rejection. This will be sent to the user via email."
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+              :class="{ 'border-red-500': rejectionError }"
+            ></textarea>
+            <p v-if="rejectionError" class="text-sm text-red-500 mt-1">{{ rejectionError }}</p>
+            <p class="text-sm text-gray-500 mt-1">The user will receive an email with this reason.</p>
+          </div>
+
+          <div class="flex justify-end space-x-3">
+            <button
+              @click="closeRejectModal"
+              :disabled="updatingStatus"
+              class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              @click="confirmReject"
+              :disabled="updatingStatus"
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <svg v-if="updatingStatus" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ updatingStatus ? 'Rejecting...' : 'Confirm Rejection' }}
+            </button>
           </div>
         </div>
       </div>
@@ -375,6 +442,10 @@ const loading = ref(false)
 const submissions = ref<Submission[]>([])
 const selectedSubmission = ref<Submission | null>(null)
 const showStatusMenu = ref<string | null>(null)
+const showRejectModal = ref(false)
+const rejectionReason = ref('')
+const rejectionError = ref('')
+const updatingStatus = ref(false)
 const toast = useToast()
 
 const currentPage = ref(1)
@@ -427,6 +498,88 @@ function debouncedLoadSubmissions() {
   debounceTimer = setTimeout(() => {
     loadSubmissions()
   }, 500)
+}
+
+async function changeStatus(status: 'pending' | 'approved' | 'rejected') {
+  if (!selectedSubmission.value) return
+  
+  // For rejection, we need a reason - handled by openRejectModal
+  if (status === 'rejected') {
+    openRejectModal()
+    return
+  }
+  
+  updatingStatus.value = true
+  
+  try {
+    await registryService.updateSubmissionStatus(selectedSubmission.value.id, status)
+    
+    // Update local state
+    selectedSubmission.value.status = status
+    const submissionIndex = submissions.value.findIndex(s => s.id === selectedSubmission.value!.id)
+    if (submissionIndex !== -1 && submissions.value[submissionIndex]) {
+      submissions.value[submissionIndex].status = status
+    }
+    
+    const statusText = status === 'approved' ? 'approved' : 'marked as pending'
+    toast.success(`Submission ${statusText} successfully! User has been notified via email.`)
+    
+    // Close the details modal
+    selectedSubmission.value = null
+  } catch (error: any) {
+    console.error('Failed to update status:', error)
+    toast.error(error.message || 'Failed to update submission status. Please try again.')
+  } finally {
+    updatingStatus.value = false
+  }
+}
+
+function openRejectModal() {
+  showRejectModal.value = true
+  rejectionReason.value = ''
+  rejectionError.value = ''
+}
+
+function closeRejectModal() {
+  showRejectModal.value = false
+  rejectionReason.value = ''
+  rejectionError.value = ''
+}
+
+async function confirmReject() {
+  if (!selectedSubmission.value) return
+  
+  // Validate rejection reason
+  if (!rejectionReason.value.trim()) {
+    rejectionError.value = 'Rejection reason is required'
+    return
+  }
+  
+  updatingStatus.value = true
+  rejectionError.value = ''
+  
+  try {
+    // Update status with rejection reason
+    await registryService.updateSubmissionStatus(selectedSubmission.value.id, 'rejected', rejectionReason.value)
+    
+    // Update local state
+    selectedSubmission.value.status = 'rejected'
+    const submissionIndex = submissions.value.findIndex(s => s.id === selectedSubmission.value!.id)
+    if (submissionIndex !== -1 && submissions.value[submissionIndex]) {
+      submissions.value[submissionIndex].status = 'rejected'
+    }
+    
+    toast.success('Submission rejected. User has been notified via email with the reason.')
+    
+    // Close both modals
+    showRejectModal.value = false
+    selectedSubmission.value = null
+  } catch (error: any) {
+    console.error('Failed to reject submission:', error)
+    toast.error(error.message || 'Failed to reject submission. Please try again.')
+  } finally {
+    updatingStatus.value = false
+  }
 }
 
 async function updateStatus(submission: Submission, status: 'approved' | 'rejected') {
