@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"os"
+	"strings"
 	"time"
 
 	"backend/internal/models"
@@ -127,8 +128,11 @@ func (s *AuthService) ValidateJWT(tokenString string) (jwt.MapClaims, error) {
 
 // Login authenticates a user and creates a session
 func (s *AuthService) Login(ctx context.Context, req *models.LoginRequest, ipAddress, userAgent string) (*models.LoginResponse, error) {
+	// Normalize email to lowercase for case-insensitive comparison
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	
 	// Find user by email
-	user, err := s.userRepo.FindByEmail(ctx, req.Email)
+	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
 		// Log failed login attempt
 		s.auditRepo.Create(ctx, &models.AuditLog{
@@ -136,7 +140,7 @@ func (s *AuthService) Login(ctx context.Context, req *models.LoginRequest, ipAdd
 			IPAddress: ipAddress,
 			UserAgent: userAgent,
 			Details: map[string]interface{}{
-				"email":  req.Email,
+				"email":  email,
 				"reason": "user not found",
 			},
 		})
@@ -151,7 +155,7 @@ func (s *AuthService) Login(ctx context.Context, req *models.LoginRequest, ipAdd
 			IPAddress: ipAddress,
 			UserAgent: userAgent,
 			Details: map[string]interface{}{
-				"email":  req.Email,
+				"email":  email,
 				"reason": "account locked",
 			},
 		})
@@ -166,7 +170,7 @@ func (s *AuthService) Login(ctx context.Context, req *models.LoginRequest, ipAdd
 			IPAddress: ipAddress,
 			UserAgent: userAgent,
 			Details: map[string]interface{}{
-				"email":  req.Email,
+				"email":  email,
 				"reason": "account inactive",
 			},
 		})
@@ -204,7 +208,7 @@ func (s *AuthService) Login(ctx context.Context, req *models.LoginRequest, ipAdd
 			IPAddress: ipAddress,
 			UserAgent: userAgent,
 			Details: map[string]interface{}{
-				"email":           req.Email,
+				"email":           email,
 				"reason":          "invalid password",
 				"failed_attempts": user.FailedLoginAttempts,
 			},

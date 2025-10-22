@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"backend/internal/models"
@@ -54,8 +55,11 @@ func (s *UserService) CreateUser(ctx context.Context, req *models.CreateUserRequ
 		return nil, errors.New("user managers cannot create admin accounts")
 	}
 
+	// Normalize email to lowercase for case-insensitive comparison
+	normalizedEmail := strings.ToLower(strings.TrimSpace(req.Email))
+	
 	// Check if email already exists
-	emailExists, err := s.userRepo.EmailExists(ctx, req.Email)
+	emailExists, err := s.userRepo.EmailExists(ctx, normalizedEmail)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +91,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *models.CreateUserRequ
 	// Create user
 	user := &models.User{
 		Username:     req.Username,
-		Email:        req.Email,
+		Email:        normalizedEmail,
 		PasswordHash: passwordHash,
 		Role:         req.Role,
 		AdminLevel:   req.AdminLevel,
