@@ -186,6 +186,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 				registry.POST("/test-email", registryHandler.SendTestEmail)
 				registry.GET("/submissions", registryHandler.GetAllSubmissions)
 				registry.PATCH("/submissions/:id/status", registryHandler.UpdateSubmissionStatus)
+
+				// SMTP-only configuration endpoints
+				registry.GET("/smtp-config", registryHandler.GetSMTPConfig)
+				registry.PUT("/smtp-config", registryHandler.UpdateSMTPConfig)
 			}
 
 			// Referral configuration (super admin only)

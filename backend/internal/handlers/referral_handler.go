@@ -49,7 +49,7 @@ func (h *ReferralHandler) GetConfig(c *gin.Context) {
 
 	// Return limited info for regular users
 	c.JSON(http.StatusOK, gin.H{
-		"isConfigured": true,
+		"isConfigured": config.IsConfigured,
 		"isEnabled":    config.IsEnabled,
 		"redcapUrl":    config.RedCapURL,
 	})

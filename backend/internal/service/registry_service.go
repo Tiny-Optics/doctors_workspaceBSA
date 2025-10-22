@@ -196,6 +196,132 @@ func (s *RegistryService) SendTestEmail(ctx context.Context, recipientEmail stri
 	return nil
 }
 
+// SMTP-Only Configuration Management
+
+// GetSMTPConfig retrieves only the SMTP configuration
+func (s *RegistryService) GetSMTPConfig(ctx context.Context) (*models.SMTPConfigResponse, error) {
+	config, err := s.configRepo.GetConfig(ctx)
+	if err != nil {
+		if err == repository.ErrRegistryConfigNotFound {
+			// Return empty config if none exists
+			return &models.SMTPConfigResponse{
+				Host:       "",
+				Port:       0,
+				Username:   "",
+				FromEmail:  "",
+				FromName:   "",
+				IsComplete: false,
+			}, nil
+		}
+		return nil, err
+	}
+
+	return &models.SMTPConfigResponse{
+		Host:       config.SMTPConfig.Host,
+		Port:       config.SMTPConfig.Port,
+		Username:   config.SMTPConfig.Username,
+		FromEmail:  config.SMTPConfig.FromEmail,
+		FromName:   config.SMTPConfig.FromName,
+		IsComplete: config.SMTPConfig.IsComplete(),
+	}, nil
+}
+
+// UpdateSMTPConfig updates only the SMTP configuration
+func (s *RegistryService) UpdateSMTPConfig(
+	ctx context.Context,
+	req *models.UpdateSMTPConfigRequest,
+	user *models.User,
+	encryptionService *EncryptionService,
+	ipAddress string,
+) (*models.SMTPConfigResponse, error) {
+	// Check admin permission
+	if !user.HasPermission(models.PermManageSystem) {
+		return nil, ErrUnauthorizedRegistryAccess
+	}
+
+	// Get existing config or create new
+	config, err := s.configRepo.GetConfig(ctx)
+	if err != nil && err != repository.ErrRegistryConfigNotFound {
+		return nil, err
+	}
+
+	// If no config exists, create a new one with default values
+	if err == repository.ErrRegistryConfigNotFound {
+		config = &models.RegistryConfig{
+			VideoURL:           "",
+			DocumentsPath:      "",
+			NotificationEmails: []string{},
+			SMTPConfig: models.SMTPConfig{
+				Host:      "",
+				Port:      587,
+				Username:  "",
+				Password:  "",
+				FromEmail: "",
+				FromName:  "",
+			},
+		}
+	}
+
+	// Update only SMTP fields
+	if req.Host != nil {
+		config.SMTPConfig.Host = *req.Host
+	}
+	if req.Port != nil {
+		config.SMTPConfig.Port = *req.Port
+	}
+	if req.Username != nil {
+		config.SMTPConfig.Username = *req.Username
+	}
+	if req.Password != nil && *req.Password != "" {
+		// Encrypt password before storing
+		encryptedPassword, err := encryptionService.Encrypt(*req.Password)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt SMTP password: %w", err)
+		}
+		config.SMTPConfig.Password = encryptedPassword
+	}
+	if req.FromEmail != nil {
+		config.SMTPConfig.FromEmail = *req.FromEmail
+	}
+	if req.FromName != nil {
+		config.SMTPConfig.FromName = *req.FromName
+	}
+
+	config.UpdatedBy = &user.ID
+
+	// Validate only SMTP config
+	if err := config.SMTPConfig.Validate(); err != nil {
+		return nil, err
+	}
+
+	// Save configuration
+	if err := s.configRepo.CreateOrUpdate(ctx, config); err != nil {
+		return nil, err
+	}
+
+	// Audit log
+	s.auditRepo.Create(ctx, &models.AuditLog{
+		UserID:      &user.ID,
+		PerformedBy: &user.ID,
+		Action:      models.AuditActionSMTPConfigUpdated,
+		Details: map[string]interface{}{
+			"updated_by": user.Email,
+		},
+		IPAddress: ipAddress,
+		Timestamp: time.Now(),
+	})
+
+	// Return updated SMTP config
+	return &models.SMTPConfigResponse{
+		Host:       config.SMTPConfig.Host,
+		Port:       config.SMTPConfig.Port,
+		Username:   config.SMTPConfig.Username,
+		FromEmail:  config.SMTPConfig.FromEmail,
+		FromName:   config.SMTPConfig.FromName,
+		IsComplete: config.SMTPConfig.IsComplete(),
+	}, nil
+}
+
 // Form Schema Management
 
 // CreateFormSchema creates a new form schema

@@ -168,6 +168,24 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
           
+          <!-- Referral Settings Icon -->
+          <svg 
+            v-else-if="item.name === 'Referral Settings'"
+            class="flex-shrink-0 transition-colors duration-200"
+            :class="[
+              isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
+              { 
+                'text-white': isActiveRoute(item),
+                'text-gray-600 group-hover:text-white': !isActiveRoute(item)
+              }
+            ]"
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          </svg>
+          
           <!-- Audit Logs Icon -->
           <svg 
             v-else-if="item.name === 'Audit Logs'"
@@ -231,6 +249,10 @@ const isActiveRoute = (item: { name: string; to: string }) => {
   if (item.to === '/admin/registry') {
     return route.path.startsWith('/admin/registry')
   }
+  // For Referral Settings, match all /admin/referrals/* paths
+  if (item.to === '/admin/referrals') {
+    return route.path.startsWith('/admin/referrals')
+  }
   // For other routes, exact match
   return route.path === item.to
 }
@@ -272,6 +294,10 @@ const navigationItems = [
   {
     name: 'Registry Settings',
     to: '/admin/registry'
+  },
+  {
+    name: 'Referral Settings',
+    to: '/admin/referrals'
   },
   {
     name: 'System Settings',

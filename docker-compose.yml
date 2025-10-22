@@ -59,6 +59,7 @@ services:
     environment:
       - NODE_ENV=development
       - VITE_API_URL=http://localhost:8080
+      - DOCKER_ENV=true
     volumes:
       - ./frontend:/app
       - /app/node_modules

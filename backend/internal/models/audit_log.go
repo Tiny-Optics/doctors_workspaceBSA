@@ -30,6 +30,7 @@ const (
 	AuditActionInstitutionDeactivated AuditAction = "institution_deactivated"
 	AuditActionReferralConfigUpdated  AuditAction = "referral_config_updated"
 	AuditActionReferralAccessed       AuditAction = "referral_accessed"
+	AuditActionSMTPConfigUpdated      AuditAction = "smtp_config_updated"
 )
 
 // AuditLog represents a log entry for audit trail

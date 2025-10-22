@@ -42,6 +42,9 @@ func (s *ReferralService) GetReferralConfig(ctx context.Context) (*models.Referr
 		return nil, err
 	}
 
+	// Set IsConfigured based on whether a REDCap URL is provided
+	config.IsConfigured = config.RedCapURL != ""
+
 	return config, nil
 }
 
@@ -77,6 +80,9 @@ func (s *ReferralService) UpdateReferralConfig(
 	if req.IsEnabled != nil {
 		config.IsEnabled = *req.IsEnabled
 	}
+
+	// Set IsConfigured based on whether a REDCap URL is provided
+	config.IsConfigured = config.RedCapURL != ""
 
 	config.UpdatedBy = &userID
 

@@ -54,6 +54,26 @@ type UpdateRegistryConfigRequest struct {
 	SMTPFromName       *string   `json:"smtpFromName,omitempty"`
 }
 
+// UpdateSMTPConfigRequest represents the request to update only SMTP configuration
+type UpdateSMTPConfigRequest struct {
+	Host      *string `json:"host,omitempty"`
+	Port      *int    `json:"port,omitempty"`
+	Username  *string `json:"username,omitempty"`
+	Password  *string `json:"password,omitempty"`
+	FromEmail *string `json:"fromEmail,omitempty"`
+	FromName  *string `json:"fromName,omitempty"`
+}
+
+// SMTPConfigResponse represents the response for SMTP configuration
+type SMTPConfigResponse struct {
+	Host       string `json:"host"`
+	Port       int    `json:"port"`
+	Username   string `json:"username"`
+	FromEmail  string `json:"fromEmail"`
+	FromName   string `json:"fromName"`
+	IsComplete bool   `json:"isComplete"`
+}
+
 // Validate validates the RegistryConfig
 func (c *RegistryConfig) Validate() error {
 	if c.VideoURL == "" {

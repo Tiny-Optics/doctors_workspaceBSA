@@ -15,12 +15,13 @@ var (
 
 // ReferralConfig represents the configuration for REDCap referral integration
 type ReferralConfig struct {
-	ID        primitive.ObjectID  `bson:"_id,omitempty" json:"id"`
-	RedCapURL string              `bson:"redcap_url" json:"redcapUrl"`
-	IsEnabled bool                `bson:"is_enabled" json:"isEnabled"`
-	CreatedAt time.Time           `bson:"created_at" json:"createdAt"`
-	UpdatedAt time.Time           `bson:"updated_at" json:"updatedAt"`
-	UpdatedBy *primitive.ObjectID `bson:"updated_by,omitempty" json:"updatedBy,omitempty"`
+	ID           primitive.ObjectID  `bson:"_id,omitempty" json:"id"`
+	RedCapURL    string              `bson:"redcap_url" json:"redcapUrl"`
+	IsEnabled    bool                `bson:"is_enabled" json:"isEnabled"`
+	IsConfigured bool                `bson:"is_configured" json:"isConfigured"`
+	CreatedAt    time.Time           `bson:"created_at" json:"createdAt"`
+	UpdatedAt    time.Time           `bson:"updated_at" json:"updatedAt"`
+	UpdatedBy    *primitive.ObjectID `bson:"updated_by,omitempty" json:"updatedBy,omitempty"`
 }
 
 // UpdateReferralConfigRequest represents the request to update referral configuration

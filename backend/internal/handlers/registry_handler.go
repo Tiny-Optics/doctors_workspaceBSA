@@ -152,6 +152,69 @@ func (h *RegistryHandler) SendTestEmail(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "test email sent successfully"})
 }
 
+// SMTP-Only Configuration Endpoints
+
+// GetSMTPConfig godoc
+// @Summary Get SMTP configuration
+// @Description Get SMTP configuration only (admin only)
+// @Tags registry
+// @Produce json
+// @Success 200 {object} models.SMTPConfigResponse
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /admin/registry/smtp-config [get]
+// @Security BearerAuth
+func (h *RegistryHandler) GetSMTPConfig(c *gin.Context) {
+	config, err := h.registryService.GetSMTPConfig(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, config)
+}
+
+// UpdateSMTPConfig godoc
+// @Summary Update SMTP configuration
+// @Description Update SMTP configuration only (admin only)
+// @Tags registry
+// @Accept json
+// @Produce json
+// @Param request body models.UpdateSMTPConfigRequest true "SMTP configuration updates"
+// @Success 200 {object} models.SMTPConfigResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /admin/registry/smtp-config [put]
+// @Security BearerAuth
+func (h *RegistryHandler) UpdateSMTPConfig(c *gin.Context) {
+	var req models.UpdateSMTPConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := middleware.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	ipAddress := middleware.GetIPAddress(c)
+
+	config, err := h.registryService.UpdateSMTPConfig(c.Request.Context(), &req, user, h.encryptionService, ipAddress)
+	if err != nil {
+		statusCode := http.StatusBadRequest
+		if err == service.ErrUnauthorizedRegistryAccess {
+			statusCode = http.StatusForbidden
+		}
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, config)
+}
+
 // Form Schema Endpoints
 
 // CreateFormSchema godoc
