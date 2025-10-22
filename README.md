@@ -11,10 +11,6 @@ The Doctor's Workspace is a dedicated sub-domain platform for BLOODSA that provi
 - **Registry Management** for the African HOPeR Registry
 - **Document Management** for ethics approvals and clinical guidelines
 
-**Project Duration:** 9 weeks (October 10 - December 15, 2025)  
-**Budget:** R40,000.00  
-**Website:** [tbc].bloodsa.org.za
-
 ## ✨ Key Features
 
 ### 1. Secure Access & User Management
