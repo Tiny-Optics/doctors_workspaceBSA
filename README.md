@@ -136,7 +136,7 @@ docker compose up -d
 - `make down` - Stop all services
 - `make clean` - Remove containers and volumes
 
-See [DOCKER.md](./DOCKER.md) for detailed Docker documentation.
+See [DOCKER.md](./docs/DOCKER.md) for detailed Docker documentation.
 
 ### Configuration Required
 1. **AWS Integration** - Document storage and serving
@@ -151,35 +151,66 @@ See [DOCKER.md](./DOCKER.md) for detailed Docker documentation.
 doctors_workspaceBSA/
 ├── backend/
 │   ├── cmd/                 # Application entry points
-│   │   └── api/            # API server
+│   │   ├── api/            # API server
+│   │   └── seed/           # Database seeding script
 │   ├── internal/            # Private application code
+│   │   ├── models/         # Data models (User, SOP, Registry, etc.)
+│   │   ├── repository/     # Database layer
+│   │   ├── service/        # Business logic layer
+│   │   ├── handlers/       # HTTP request handlers
+│   │   ├── middleware/     # Authentication & authorization
+│   │   └── server/         # Server configuration
+│   ├── uploads/            # File uploads (SOP images, etc.)
 │   ├── .air.toml           # Air hot-reload configuration
-│   ├── .dockerignore       # Docker ignore file
-│   ├── docker-compose.yml   # MongoDB standalone config
 │   ├── Dockerfile          # Production Dockerfile
 │   ├── Dockerfile.dev      # Development Dockerfile with Air
 │   ├── go.mod              # Go module dependencies
-│   ├── Makefile            # Build and run commands
-│   └── README.md
+│   └── Makefile            # Build and run commands
 ├── frontend/
 │   ├── src/
 │   │   ├── components/     # Vue components
+│   │   │   ├── AdminSidebar.vue
+│   │   │   ├── Header.vue
+│   │   │   └── ToastNotification.vue
+│   │   ├── views/          # Page components
+│   │   │   ├── admin/      # Admin panel pages
+│   │   │   │   ├── settings/  # Email settings, etc.
+│   │   │   │   ├── ReferralSettings.vue
+│   │   │   │   └── SOPManagement.vue
+│   │   │   ├── sops/       # SOP pages
+│   │   │   ├── registry/   # Registry pages
+│   │   │   ├── Dashboard.vue
+│   │   │   ├── Login.vue
+│   │   │   └── ReferralPage.vue
 │   │   ├── router/         # Vue Router configuration
 │   │   ├── stores/         # Pinia state management
+│   │   ├── services/       # API service layer
+│   │   ├── types/          # TypeScript type definitions
+│   │   ├── composables/    # Vue composables
 │   │   ├── App.vue         # Root component
 │   │   └── main.ts         # Application entry point
 │   ├── public/             # Static assets
-│   ├── .dockerignore       # Docker ignore file
 │   ├── Dockerfile          # Production Dockerfile with Nginx
 │   ├── Dockerfile.dev      # Development Dockerfile with Vite
 │   ├── nginx.conf          # Nginx configuration for production
 │   ├── package.json        # Node.js dependencies
 │   ├── vite.config.ts      # Vite configuration
 │   └── tsconfig.json       # TypeScript configuration
+├── docs/                   # Project documentation
+│   ├── CLOUDWAYS_DEPLOYMENT.md
+│   ├── DASHBOARD_GUIDE.md
+│   ├── DEPLOYMENT.md
+│   ├── DOCKER.md
+│   ├── QUICKSTART.md
+│   ├── REFERRAL_ENDPOINTS.md
+│   ├── SMTP_ENDPOINTS.md
+│   ├── SOP_API_DOCUMENTATION.md
+│   ├── USER_MODELS_SUMMARY.md
+│   └── [24 total documentation files]
 ├── .env.example            # Environment variables template
 ├── docker-compose.yml      # Development orchestration
 ├── docker-compose.prod.yml # Production orchestration
-├── DOCKER.md               # Docker documentation
+├── docker-compose.cloudways.yml # Cloudways deployment
 ├── Makefile                # Root-level Docker commands
 └── README.md               # This file
 ```

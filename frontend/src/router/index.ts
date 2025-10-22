@@ -41,7 +41,7 @@ const router = createRouter({
     {
       path: '/referrals',
       name: 'referrals',
-      component: () => import('../views/ComingSoon.vue'),
+      component: () => import('../views/ReferralPage.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -147,6 +147,11 @@ const router = createRouter({
           path: 'registry/submissions',
           name: 'admin-registry-submissions',
           component: () => import('../views/admin/RegistrySubmissions.vue')
+        },
+        {
+          path: 'referrals',
+          name: 'admin-referrals',
+          component: () => import('../views/admin/ReferralSettings.vue')
         }
       ]
     }

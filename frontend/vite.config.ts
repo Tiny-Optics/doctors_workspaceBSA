@@ -24,13 +24,21 @@ export default defineConfig({
     hmr: {
       host: 'localhost',
     },
-    // Only add proxy in development mode (when running in Docker dev environment)
+    // Only add proxy in development mode
     ...(process.env.NODE_ENV === 'development' && {
       proxy: {
         '/api': {
-          target: process.env.VITE_API_URL || 'http://localhost:8080',
+          // In Docker dev environment, use service name; otherwise use localhost
+          target: process.env.DOCKER_ENV ? 'http://backend:8080' : 'http://localhost:8080',
           changeOrigin: true,
           secure: false,
+          configure: (proxy, options) => {
+            console.log('🔧 Vite Proxy Configured:')
+            console.log('  - Target:', options.target)
+            console.log('  - NODE_ENV:', process.env.NODE_ENV)
+            console.log('  - VITE_API_URL:', process.env.VITE_API_URL)
+            console.log('  - DOCKER_ENV:', process.env.DOCKER_ENV)
+          }
         },
       },
     }),

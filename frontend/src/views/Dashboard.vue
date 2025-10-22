@@ -49,12 +49,18 @@
                 <div class="text-sm opacity-90">SOP Categories</div>
               </div>
               <div class="bg-gradient-to-r from-green-500 to-green-700 text-white p-4 rounded-lg">
-                <div class="text-xs opacity-90">Coming Soon</div>
-                <div class="text-sm opacity-90 mt-1">Referrals</div>
+                <div class="text-2xl font-bold">
+                  <span v-if="loadingStats" class="animate-pulse">--</span>
+                  <span v-else>{{ systemStats.referralsAvailable ? 'Active' : 'Inactive' }}</span>
+                </div>
+                <div class="text-sm opacity-90">Referrals</div>
               </div>
               <div class="bg-gradient-to-r from-purple-500 to-purple-700 text-white p-4 rounded-lg">
-                <div class="text-xs opacity-90">Coming Soon</div>
-                <div class="text-sm opacity-90 mt-1">Registry</div>
+                <div class="text-2xl font-bold">
+                  <span v-if="loadingStats" class="animate-pulse">--</span>
+                  <span v-else>{{ systemStats.registryAvailable ? 'Active' : 'Inactive' }}</span>
+                </div>
+                <div class="text-sm opacity-90">Registry</div>
               </div>
             </div>
           </div>
@@ -180,29 +186,7 @@
             </div>
           </router-link>
 
-          <!-- Working Parties Card -->
-          <router-link
-            to="/working-parties"
-            class="group bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-indigo-500 transform hover:-translate-y-1"
-          >
-            <div class="p-8">
-              <div class="w-16 h-16 bg-indigo-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h3 class="text-xl font-semibold text-gray-900 mb-3">Working Parties</h3>
-              <p class="text-gray-600 mb-6 leading-relaxed">
-                Collaborate with colleagues and participate in working groups and committees.
-              </p>
-              <div class="flex items-center text-indigo-600 font-medium group-hover:text-indigo-700">
-                Join Groups
-                <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-          </router-link>
+         
         </div>
       </div>
     </section>
@@ -215,6 +199,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useInstitutionsStore } from '@/stores/institutions'
 import { getUserRoleDisplayName } from '@/types/user'
 import { statsService } from '@/services/statsService'
+import { referralService } from '@/services/referralService'
+import { registryService } from '@/services/registryService'
 
 const authStore = useAuthStore()
 const institutionsStore = useInstitutionsStore()
@@ -224,7 +210,9 @@ const user = computed(() => authStore.user)
 // System stats for admin dashboard
 const systemStats = ref({
   totalUsers: 0,
-  totalSOPs: 0
+  totalSOPs: 0,
+  referralsAvailable: false,
+  registryAvailable: false
 })
 
 const loadingStats = ref(false)
@@ -286,9 +274,30 @@ const loadSystemStats = async () => {
   
   try {
     const stats = await statsService.getAdminStats()
+    
+    // Check referral system status
+    let referralsAvailable = false
+    try {
+      const referralConfig = await referralService.getReferralConfig()
+      referralsAvailable = referralConfig.isConfigured && referralConfig.isEnabled
+    } catch (error) {
+      console.log('Referral system not configured')
+    }
+    
+    // Check registry system status
+    let registryAvailable = false
+    try {
+      const activeForm = await registryService.getActiveForm()
+      registryAvailable = activeForm !== null
+    } catch (error) {
+      console.log('Registry system not available')
+    }
+    
     systemStats.value = {
       totalUsers: stats.totalUsers,
-      totalSOPs: stats.totalSOPs
+      totalSOPs: stats.totalSOPs,
+      referralsAvailable,
+      registryAvailable
     }
   } catch (error) {
     console.error('Failed to load system stats:', error)

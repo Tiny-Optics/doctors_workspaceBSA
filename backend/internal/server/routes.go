@@ -43,6 +43,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	registryConfigRepo := repository.NewRegistryConfigRepository(db)
 	registryFormRepo := repository.NewRegistryFormRepository(db)
 	registrySubmissionRepo := repository.NewRegistrySubmissionRepository(db)
+	referralConfigRepo := repository.NewReferralConfigRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
@@ -72,6 +73,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		dropboxService,
 		emailService,
 	)
+	referralService := service.NewReferralService(referralConfigRepo, auditRepo)
 
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
@@ -81,6 +83,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	sopCategoryHandler := handlers.NewSOPCategoryHandler(sopCategoryService)
 	dropboxAdminHandler := handlers.NewDropboxAdminHandler(dropboxOAuthService)
 	registryHandler := handlers.NewRegistryHandler(registryService, encryptionService)
+	referralHandler := handlers.NewReferralHandler(referralService)
 
 	// API routes group
 	api := r.Group("/api")
@@ -183,6 +186,17 @@ func (s *Server) RegisterRoutes() http.Handler {
 				registry.POST("/test-email", registryHandler.SendTestEmail)
 				registry.GET("/submissions", registryHandler.GetAllSubmissions)
 				registry.PATCH("/submissions/:id/status", registryHandler.UpdateSubmissionStatus)
+
+				// SMTP-only configuration endpoints
+				registry.GET("/smtp-config", registryHandler.GetSMTPConfig)
+				registry.PUT("/smtp-config", registryHandler.UpdateSMTPConfig)
+			}
+
+			// Referral configuration (super admin only)
+			referrals := admin.Group("/referrals")
+			{
+				referrals.GET("/config", referralHandler.GetAdminConfig)
+				referrals.PUT("/config", referralHandler.UpdateConfig)
 			}
 		}
 
@@ -210,6 +224,14 @@ func (s *Server) RegisterRoutes() http.Handler {
 			registry.GET("/example-documents", registryHandler.GetExampleDocuments)
 			registry.GET("/example-documents/download", registryHandler.GetExampleDocumentDownloadLink)
 			registry.GET("/document-download", registryHandler.GetSubmissionDocumentDownloadLink)
+		}
+
+		// Referral routes (authenticated users)
+		referrals := api.Group("/referrals")
+		referrals.Use(middleware.AuthMiddleware(authService))
+		{
+			referrals.GET("/config", referralHandler.GetConfig)
+			referrals.POST("/access", referralHandler.LogAccess)
 		}
 	}
 
