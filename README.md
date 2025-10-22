@@ -58,15 +58,6 @@ The Doctor's Workspace is a dedicated sub-domain platform for BLOODSA that provi
 ### Third-Party Services
 - **REDCap** - Research form management (existing client account)
 - **Dropbox** - Document storage (existing client account)
-- **Email API** - Free tier (up to 300 emails/day)
-
-### Hosting
-- **Provider:** [To be determined]
-- **Cost:** R285/month or R3,420/year
-- **Resources:**
-  - vCPU: 1 vCore
-  - Memory: 2 GB
-  - Storage: 50 GB
 
 ## 🚀 Getting Started
 
