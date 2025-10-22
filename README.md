@@ -72,40 +72,6 @@ The Doctor's Workspace is a dedicated sub-domain platform for BLOODSA that provi
   - Memory: 2 GB
   - Storage: 50 GB
 
-## 📅 Project Timeline
-
-### Phase 1: Discovery & Core MVP (6 weeks)
-
-| Sprint | Timeframe | Focus | Payment |
-|--------|-----------|-------|---------|
-| **Sprint 1** | Oct 17-23 | Planning & Architecture | - |
-| **Sprint 2** | Oct 24-30 | Authentication & SOP Framework | R3,750 |
-| **Sprint 3** | Oct 31 - Nov 6 | Referral & Registry MVP | R3,750 |
-| **Sprint 4** | Nov 7-13 | Document Management & Upload | R3,750 |
-| **Sprint 5** | Nov 14-20 | Development Continuation | R3,750 |
-| **Sprint 6** | Nov 21-27 | QA & UAT | R3,750 |
-
-### Phase 2: Enhancements, UX & Launch (3 weeks)
-
-| Sprint | Timeframe | Focus | Payment |
-|--------|-----------|-------|---------|
-| **Sprint 7** | Nov 28 - Dec 4 | UX & UI Enhancements | R3,750 |
-| **Sprint 8** | Dec 5-11 | Performance & Security | R3,750 |
-| **Sprint 9** | Dec 12-15 | Final QA & Launch Prep | R3,750 |
-
-**Total Sprints:** 9  
-**Launch Target:** Mid-December 2025
-
-## 💰 Payment Structure
-
-| Milestone | Amount | Percentage |
-|-----------|--------|------------|
-| Project Kick-off (Deposit) | R10,000 | 25% |
-| Phase 1 Complete | R10,000 | 25% |
-| Phase 2 Complete | R10,000 | 25% |
-| Sprint Payments (9 × R3,750) | R10,000 | 25% |
-| **Total** | **R40,000** | **100%** |
-
 ## 🚀 Getting Started
 
 ### Prerequisites
