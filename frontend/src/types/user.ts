@@ -178,3 +178,33 @@ export function canManageUser(currentUser: User, targetUser: User): boolean {
   return false
 }
 
+// Forgot Password Types
+export interface ForgotPasswordRequest {
+  email: string
+}
+
+export interface ForgotPasswordResponse {
+  message: string
+  success: boolean
+}
+
+export interface ValidateResetCodeRequest {
+  code: string
+}
+
+export interface ValidateResetCodeResponse {
+  token: string
+  message: string
+  success: boolean
+}
+
+export interface ResetPasswordRequest {
+  token: string
+  newPassword: string
+}
+
+export interface ResetPasswordResponse {
+  message: string
+  success: boolean
+}
+

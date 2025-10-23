@@ -241,3 +241,18 @@ func (r *UserRepository) UsernameExists(ctx context.Context, username string) (b
 	}
 	return count > 0, nil
 }
+
+// UpdatePassword updates a user's password hash
+func (r *UserRepository) UpdatePassword(ctx context.Context, id primitive.ObjectID, passwordHash string) error {
+	_, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": id},
+		bson.M{
+			"$set": bson.M{
+				"password_hash": passwordHash,
+				"updated_at":    time.Now(),
+			},
+		},
+	)
+	return err
+}

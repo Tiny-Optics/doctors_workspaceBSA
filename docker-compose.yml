@@ -35,6 +35,8 @@ services:
       - BLUEPRINT_DB_PORT=27017
       - BLUEPRINT_DB_USERNAME=${BLUEPRINT_DB_USERNAME:-melkey}
       - BLUEPRINT_DB_ROOT_PASSWORD=${BLUEPRINT_DB_ROOT_PASSWORD:-password1234}
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     volumes:
       - ./backend:/app
       - /app/tmp

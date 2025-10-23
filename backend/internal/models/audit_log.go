@@ -32,6 +32,8 @@ const (
 	AuditActionReferralConfigUpdated  AuditAction = "referral_config_updated"
 	AuditActionReferralAccessed       AuditAction = "referral_accessed"
 	AuditActionSMTPConfigUpdated      AuditAction = "smtp_config_updated"
+	AuditActionPasswordResetRequested AuditAction = "password_reset_requested"
+	AuditActionPasswordResetCompleted AuditAction = "password_reset_completed"
 )
 
 // AuditLog represents a log entry for audit trail

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"time"
 
 	"backend/internal/models"
 
@@ -337,4 +338,153 @@ func (s *EmailService) SendStatusChangeNotification(
 	}
 
 	return nil
+}
+
+// SendPasswordResetEmail sends a password reset email with verification code
+func (s *EmailService) SendPasswordResetEmail(smtpConfig models.SMTPConfig, userEmail, code, userName string) error {
+	// Validate SMTP config
+	if !smtpConfig.IsComplete() {
+		return ErrIncompleteSMTPConfig
+	}
+
+	// Decrypt password
+	decryptedPassword, err := s.encryptionService.Decrypt(smtpConfig.Password)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt SMTP password: %w", err)
+	}
+
+	// Create email message
+	subject := "Password Reset - BLOODSA Doctor's Workspace"
+	htmlBody := s.generatePasswordResetEmailHTML(code, userName)
+
+	// Create mailer
+	m := gomail.NewMessage()
+	m.SetHeader("From", smtpConfig.FromEmail)
+	m.SetHeader("To", userEmail)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", htmlBody)
+
+	// Create dialer and send
+	d := gomail.NewDialer(smtpConfig.Host, smtpConfig.Port, smtpConfig.Username, decryptedPassword)
+
+	if err := d.DialAndSend(m); err != nil {
+		return fmt.Errorf("%w: %v", ErrEmailSendFailed, err)
+	}
+
+	return nil
+}
+
+// generatePasswordResetEmailHTML generates the HTML body for password reset email
+func (s *EmailService) generatePasswordResetEmailHTML(code, userName string) string {
+	currentYear := time.Now().Year()
+	return fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #8B0000;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 40px;
+            border: 1px solid #ddd;
+            border-radius: 0 0 8px 8px;
+        }
+        .code-container {
+            background-color: #fff;
+            border: 2px solid #8B0000;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .code {
+            font-size: 32px;
+            font-weight: bold;
+            color: #8B0000;
+            letter-spacing: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #8B0000;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Password Reset Request</h1>
+            <p>BLOODSA Doctor's Workspace</p>
+        </div>
+        <div class="content">
+            <p>Dear %s,</p>
+            
+            <p>We received a request to reset your password for your BLOODSA Doctor's Workspace account.</p>
+            
+            <div class="code-container">
+                <p style="margin: 0 0 10px 0; font-weight: bold;">Your verification code is:</p>
+                <div class="code">%s</div>
+            </div>
+            
+            <p>Please enter this code in the password reset form to continue.</p>
+            
+            <div class="warning">
+                <strong>Important Security Information:</strong>
+                <ul style="margin: 10px 0;">
+                    <li>This code will expire in 15 minutes</li>
+                    <li>This code can only be used once</li>
+                    <li>If you didn't request this password reset, please ignore this email</li>
+                    <li>Never share this code with anyone</li>
+                </ul>
+            </div>
+            
+            <p>If you have any questions or need assistance, please contact the system administrator.</p>
+            
+            <div class="footer">
+                <p>This is an automated message from the BLOODSA Doctor's Workspace system.</p>
+                <p>© %d BLOODSA. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+`, userName, code, currentYear)
 }

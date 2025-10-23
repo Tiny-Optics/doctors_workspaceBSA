@@ -98,11 +98,11 @@
           </div>
 
           <!-- Forgot Password -->
-          <div class="flex items-center justify-end">
+          <div v-if="smtpStore.isConfigured" class="flex items-center justify-end">
             <div class="text-sm">
-              <a href="#" class="font-medium text-bloodsa-red hover:text-bloodsa-light-red transition-colors">
+              <router-link to="/forgot-password" class="font-medium text-bloodsa-red hover:text-bloodsa-light-red transition-colors">
                 Forgot password?
-              </a>
+              </router-link>
             </div>
           </div>
 
@@ -127,7 +127,7 @@
         </form>
 
         <!-- Additional Info -->
-        <div class="mt-6 text-center text-sm text-gray-600">
+        <div class="mt-6 text-center text-sm text-gray-600 space-y-2">
           <p>
             Don't have an account? 
             <router-link to="/register" class="font-medium text-bloodsa-red hover:text-red-700 transition-colors">
@@ -147,12 +147,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSMTPStore } from '@/stores/smtp'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const smtpStore = useSMTPStore()
 
 // Form state
 const credentials = ref({
@@ -186,6 +188,16 @@ const clearError = () => {
   error.value = null
   authStore.clearError()
 }
+
+// Check SMTP configuration on mount
+onMounted(async () => {
+  try {
+    await smtpStore.checkSMTPConfiguration()
+  } catch (err) {
+    // Silently fail - forgot password link will be hidden
+    console.warn('Failed to check SMTP configuration:', err)
+  }
+})
 </script>
 
 <style scoped>
