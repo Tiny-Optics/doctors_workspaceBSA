@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"backend/internal/models"
@@ -91,10 +92,12 @@ func (r *UserRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*
 	return &user, nil
 }
 
-// FindByEmail finds a user by email
+// FindByEmail finds a user by email (case-insensitive)
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	err := r.collection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+	// Use case-insensitive regex for email comparison
+	emailRegex := bson.M{"$regex": "^" + strings.ReplaceAll(email, ".", "\\.") + "$", "$options": "i"}
+	err := r.collection.FindOne(ctx, bson.M{"email": emailRegex}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, ErrUserNotFound
@@ -219,9 +222,11 @@ func (r *UserRepository) UnlockAccount(ctx context.Context, id primitive.ObjectI
 	})
 }
 
-// EmailExists checks if an email already exists
+// EmailExists checks if an email already exists (case-insensitive)
 func (r *UserRepository) EmailExists(ctx context.Context, email string) (bool, error) {
-	count, err := r.collection.CountDocuments(ctx, bson.M{"email": email})
+	// Use case-insensitive regex for email comparison
+	emailRegex := bson.M{"$regex": "^" + strings.ReplaceAll(email, ".", "\\.") + "$", "$options": "i"}
+	count, err := r.collection.CountDocuments(ctx, bson.M{"email": emailRegex})
 	if err != nil {
 		return false, err
 	}

@@ -129,6 +129,7 @@ func (r *SOPCategoryRepository) List(ctx context.Context, filter SOPCategoryFilt
 		mongoFilter["$or"] = []bson.M{
 			{"name": bson.M{"$regex": filter.Search, "$options": "i"}},
 			{"description": bson.M{"$regex": filter.Search, "$options": "i"}},
+			{"slug": bson.M{"$regex": filter.Search, "$options": "i"}},
 		}
 	}
 
@@ -167,6 +168,7 @@ func (r *SOPCategoryRepository) Count(ctx context.Context, filter SOPCategoryFil
 		mongoFilter["$or"] = []bson.M{
 			{"name": bson.M{"$regex": filter.Search, "$options": "i"}},
 			{"description": bson.M{"$regex": filter.Search, "$options": "i"}},
+			{"slug": bson.M{"$regex": filter.Search, "$options": "i"}},
 		}
 	}
 

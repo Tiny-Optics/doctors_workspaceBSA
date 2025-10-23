@@ -62,7 +62,7 @@
               id="documentsPath"
               v-model="config.documentsPath"
               type="text"
-              placeholder="/BLDS_approvals/examples/"
+              placeholder="/examples/"
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
             />
             <p class="mt-1 text-sm text-gray-500">
