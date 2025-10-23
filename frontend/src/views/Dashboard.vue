@@ -287,8 +287,8 @@ const loadSystemStats = async () => {
     // Check registry system status
     let registryAvailable = false
     try {
-      const activeForm = await registryService.getActiveForm()
-      registryAvailable = activeForm !== null
+      const config = await registryService.getPublicConfiguration()
+      registryAvailable = config !== null
     } catch (error) {
       console.log('Registry system not available')
     }

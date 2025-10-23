@@ -61,7 +61,7 @@
           
           <!-- Dashboard Icon -->
           <svg 
-            v-if="item.name === 'Dashboard'"
+            v-if="item.name === 'Admin Dashboard'"
             class="flex-shrink-0 transition-colors duration-200"
             :class="[
               isCollapsed ? 'w-6 h-6' : 'w-5 h-5',
@@ -276,7 +276,7 @@ const authStore = useAuthStore()
 // Navigation items - easily configurable
 const navigationItems = [
   {
-    name: 'Dashboard',
+    name: 'Admin Dashboard',
     to: '/admin'
   },
   {
