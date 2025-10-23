@@ -18,6 +18,7 @@ export interface SOPFile {
   size: number
   modifiedTime: string
   isFolder: boolean
+  children?: SOPFile[]
 }
 
 export interface CreateCategoryRequest {

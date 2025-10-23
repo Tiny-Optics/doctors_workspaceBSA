@@ -903,8 +903,8 @@ func (s *RegistryService) GetExampleDocuments(ctx context.Context) ([]DropboxFil
 		return nil, errors.New("dropbox is not configured")
 	}
 
-	// List files from Dropbox
-	files, err := s.dropboxService.ListFiles(config.DocumentsPath)
+	// List files recursively from Dropbox to get nested folder structure
+	files, err := s.dropboxService.ListFilesRecursive(config.DocumentsPath)
 	if err != nil {
 		if err == ErrFolderNotFound {
 			// Return empty list if folder doesn't exist yet
