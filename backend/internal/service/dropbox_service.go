@@ -31,11 +31,12 @@ var (
 
 // DropboxFileInfo represents metadata about a file in Dropbox
 type DropboxFileInfo struct {
-	Name         string    `json:"name"`
-	Path         string    `json:"path"`
-	Size         uint64    `json:"size"`
-	ModifiedTime time.Time `json:"modifiedTime"`
-	IsFolder     bool      `json:"isFolder"`
+	Name         string            `json:"name"`
+	Path         string            `json:"path"`
+	Size         uint64            `json:"size"`
+	ModifiedTime time.Time         `json:"modifiedTime"`
+	IsFolder     bool              `json:"isFolder"`
+	Children     []DropboxFileInfo `json:"children,omitempty"`
 }
 
 // DropboxService handles Dropbox operations with automatic token refresh
@@ -367,6 +368,186 @@ func (s *DropboxService) ListFiles(relativePath string) ([]DropboxFileInfo, erro
 	}
 
 	return fileInfos, nil
+}
+
+// ListFilesRecursive lists all files and folders recursively, building a tree structure
+func (s *DropboxService) ListFilesRecursive(relativePath string) ([]DropboxFileInfo, error) {
+	ctx := context.Background()
+	if err := s.ensureValidToken(ctx); err != nil {
+		return nil, err
+	}
+
+	s.cacheMutex.RLock()
+	client := s.cachedClient
+	parentFolder := s.cachedConfig.ParentFolder
+	s.cacheMutex.RUnlock()
+
+	fullPath := s.getFullPath(relativePath, parentFolder)
+
+	// Get initial folder contents
+	listArg := files.NewListFolderArg(fullPath)
+	result, err := client.ListFolder(listArg)
+	if err != nil {
+		if strings.Contains(err.Error(), "path/not_found") {
+			return nil, ErrFolderNotFound
+		}
+		return nil, fmt.Errorf("failed to list folder: %w", err)
+	}
+
+	var fileInfos []DropboxFileInfo
+
+	// Process initial batch
+	for _, entry := range result.Entries {
+		fileInfo := s.entryToFileInfo(entry)
+		if fileInfo != nil {
+			// If it's a folder, recursively get its contents
+			if fileInfo.IsFolder {
+				children, err := s.listFolderRecursive(client, fileInfo.Path, parentFolder)
+				if err != nil {
+					// If we can't access the folder, skip it but continue
+					fmt.Printf("Warning: Could not access folder %s: %v\n", fileInfo.Path, err)
+					fileInfo.Children = []DropboxFileInfo{}
+				} else {
+					fileInfo.Children = children
+				}
+			}
+			fileInfos = append(fileInfos, *fileInfo)
+		}
+	}
+
+	// Handle pagination if there are more results
+	for result.HasMore {
+		continueArg := files.NewListFolderContinueArg(result.Cursor)
+		result, err = client.ListFolderContinue(continueArg)
+		if err != nil {
+			return fileInfos, fmt.Errorf("failed to continue listing folder: %w", err)
+		}
+
+		for _, entry := range result.Entries {
+			fileInfo := s.entryToFileInfo(entry)
+			if fileInfo != nil {
+				// If it's a folder, recursively get its contents
+				if fileInfo.IsFolder {
+					children, err := s.listFolderRecursive(client, fileInfo.Path, parentFolder)
+					if err != nil {
+						// If we can't access the folder, skip it but continue
+						fmt.Printf("Warning: Could not access folder %s: %v\n", fileInfo.Path, err)
+						fileInfo.Children = []DropboxFileInfo{}
+					} else {
+						fileInfo.Children = children
+					}
+				}
+				fileInfos = append(fileInfos, *fileInfo)
+			}
+		}
+	}
+
+	// Filter out empty folders (folders with no files)
+	return s.filterEmptyFolders(fileInfos), nil
+}
+
+// listFolderRecursive is a helper method to recursively list folder contents
+func (s *DropboxService) listFolderRecursive(client files.Client, folderPath, parentFolder string) ([]DropboxFileInfo, error) {
+	listArg := files.NewListFolderArg(folderPath)
+	result, err := client.ListFolder(listArg)
+	if err != nil {
+		if strings.Contains(err.Error(), "path/not_found") {
+			return []DropboxFileInfo{}, nil
+		}
+		return nil, err
+	}
+
+	var fileInfos []DropboxFileInfo
+
+	// Process initial batch
+	for _, entry := range result.Entries {
+		fileInfo := s.entryToFileInfo(entry)
+		if fileInfo != nil {
+			// If it's a folder, recursively get its contents
+			if fileInfo.IsFolder {
+				children, err := s.listFolderRecursive(client, fileInfo.Path, parentFolder)
+				if err != nil {
+					// If we can't access the folder, skip it but continue
+					fmt.Printf("Warning: Could not access folder %s: %v\n", fileInfo.Path, err)
+					fileInfo.Children = []DropboxFileInfo{}
+				} else {
+					fileInfo.Children = children
+				}
+			}
+			fileInfos = append(fileInfos, *fileInfo)
+		}
+	}
+
+	// Handle pagination if there are more results
+	for result.HasMore {
+		continueArg := files.NewListFolderContinueArg(result.Cursor)
+		result, err = client.ListFolderContinue(continueArg)
+		if err != nil {
+			return fileInfos, fmt.Errorf("failed to continue listing folder: %w", err)
+		}
+
+		for _, entry := range result.Entries {
+			fileInfo := s.entryToFileInfo(entry)
+			if fileInfo != nil {
+				// If it's a folder, recursively get its contents
+				if fileInfo.IsFolder {
+					children, err := s.listFolderRecursive(client, fileInfo.Path, parentFolder)
+					if err != nil {
+						// If we can't access the folder, skip it but continue
+						fmt.Printf("Warning: Could not access folder %s: %v\n", fileInfo.Path, err)
+						fileInfo.Children = []DropboxFileInfo{}
+					} else {
+						fileInfo.Children = children
+					}
+				}
+				fileInfos = append(fileInfos, *fileInfo)
+			}
+		}
+	}
+
+	// Filter out empty folders
+	return s.filterEmptyFolders(fileInfos), nil
+}
+
+// filterEmptyFolders removes folders that contain no files (only empty subfolders)
+func (s *DropboxService) filterEmptyFolders(files []DropboxFileInfo) []DropboxFileInfo {
+	var result []DropboxFileInfo
+
+	for _, file := range files {
+		if file.IsFolder {
+			// Recursively filter children first
+			filteredChildren := s.filterEmptyFolders(file.Children)
+
+			// Check if this folder has any files (not just empty subfolders)
+			hasFiles := s.folderHasFiles(file.Children)
+
+			// Only include this folder if it has files or non-empty subfolders
+			if hasFiles || len(filteredChildren) > 0 {
+				file.Children = filteredChildren
+				result = append(result, file)
+			}
+		} else {
+			// Always include files
+			result = append(result, file)
+		}
+	}
+
+	return result
+}
+
+// folderHasFiles checks if a folder contains any files (not just empty subfolders)
+func (s *DropboxService) folderHasFiles(children []DropboxFileInfo) bool {
+	for _, child := range children {
+		if !child.IsFolder {
+			// Found a file
+			return true
+		}
+		// Recursively check subfolders
+		if s.folderHasFiles(child.Children) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetFileDownloadLink generates a temporary download link for a file
