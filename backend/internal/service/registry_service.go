@@ -590,7 +590,7 @@ func (s *RegistryService) SubmitForm(
 	}
 
 	// Upload documents to Dropbox
-	dropboxPath := fmt.Sprintf("BLDS_approvals/%s/%s", user.Username, submission.ID.Hex())
+	dropboxPath := fmt.Sprintf("Registry_Submissions/%s/%s", user.Username, submission.ID.Hex())
 	submission.DocumentsPath = dropboxPath
 
 	uploadedFiles := []string{}
