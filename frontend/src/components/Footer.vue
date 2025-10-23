@@ -5,12 +5,12 @@
         <!-- BLOODSA Info -->
         <div class="col-span-1 md:col-span-2">
           <div class="flex items-center space-x-3 mb-4">
-            <div class="w-8 h-8 bg-bloodsa-red rounded-full flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-              </svg>
-            </div>
-            <span class="text-lg font-bold text-bloodsa-red">BLOODSA</span>
+            <img 
+              src="/BLOODSA-SVG-Logo.svg" 
+              alt="BloodSA Logo" 
+              class="w-32 h-32 object-contain"
+            />
+            <span class="text-lg font-bold text-bloodsa-red">Doctor's Workspace</span>
           </div>
           <p class="text-gray-600 text-sm leading-relaxed">
             The Blood and Marrow Transplant Society of South Africa (BLOODSA) is dedicated to advancing 
@@ -33,9 +33,32 @@
         <div>
           <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Contact</h3>
           <ul class="space-y-2">
-            <li class="text-gray-600 text-sm">info@bloodsa.org.za</li>
-            <li class="text-gray-600 text-sm">+27 (0) 11 123 4567</li>
-            <li class="text-gray-600 text-sm">Johannesburg, South Africa</li>
+            <li>
+              <a 
+                href="mailto:info@bloodsa.org.za" 
+                class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200"
+              >
+                info@bloodsa.org.za
+              </a>
+            </li>
+            <li>
+              <a 
+                href="tel:+27111234567" 
+                class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200"
+              >
+                +27 (0) 11 123 4567
+              </a>
+            </li>
+            <li>
+              <a 
+                href="https://maps.app.goo.gl/xf4hEpThDYei8JNu8" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200"
+              >
+                Johannesburg, South Africa
+              </a>
+            </li>
           </ul>
         </div>
       </div>

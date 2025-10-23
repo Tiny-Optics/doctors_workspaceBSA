@@ -5,11 +5,11 @@
         <!-- Logo and Title -->
         <router-link to="/dashboard" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
           <div class="relative">
-            <div class="w-10 h-10 bg-bloodsa-red rounded-full flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-              </svg>
-            </div>
+            <img 
+              src="/BLOODSA-SVG-Logo.svg" 
+              alt="BloodSA Logo" 
+              class="w-32 h-32 object-contain"
+            />
           </div>
           <h1 class="text-xl font-bold text-bloodsa-red">Doctor's Workspace</h1>
         </router-link>
