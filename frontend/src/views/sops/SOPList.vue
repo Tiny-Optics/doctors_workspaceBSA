@@ -157,7 +157,15 @@ const downloadingFile = ref<string | null>(null)
 
 const categoryName = computed(() => category.value?.name || 'SOPs')
 const categoryDescription = computed(() => category.value?.description)
-const categoryDropboxPath = computed(() => category.value?.dropboxPath || '')
+const categoryDropboxPath = computed(() => {
+  const path = category.value?.dropboxPath || ''
+  // Decode URL-encoded path for user-friendly display
+  try {
+    return decodeURIComponent(path)
+  } catch {
+    return path
+  }
+})
 
 const filtered = computed(() =>
   files.value.filter(file => 

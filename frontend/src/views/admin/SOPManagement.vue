@@ -352,7 +352,7 @@
             </svg>
             <p class="text-gray-600">No files in this category</p>
             <p class="text-sm text-gray-500 mt-2">Upload files manually to Dropbox folder:</p>
-            <code class="text-xs bg-gray-100 px-2 py-1 rounded mt-2 inline-block">{{ selectedCategory?.dropboxPath }}</code>
+            <code class="text-xs bg-gray-100 px-2 py-1 rounded mt-2 inline-block">{{ selectedCategoryDropboxPath }}</code>
           </div>
           <div v-else class="space-y-2">
             <div
@@ -446,6 +446,16 @@ const formData = ref<CreateCategoryRequest & { isActive?: boolean }>({
 
 const sortedCategories = computed(() => {
   return [...categories.value].sort((a, b) => a.displayOrder - b.displayOrder)
+})
+
+const selectedCategoryDropboxPath = computed(() => {
+  const path = selectedCategory.value?.dropboxPath || ''
+  // Decode URL-encoded path for user-friendly display
+  try {
+    return decodeURIComponent(path)
+  } catch {
+    return path
+  }
 })
 
 onMounted(async () => {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"path/filepath"
 
 	"backend/internal/models"
@@ -76,7 +77,7 @@ func (s *SOPCategoryService) CreateCategory(
 		Slug:         slug,
 		Description:  req.Description,
 		ImagePath:    req.ImagePath,
-		DropboxPath:  "SOPS/" + req.Name,
+		DropboxPath:  "SOPS/" + url.PathEscape(req.Name),
 		DisplayOrder: req.DisplayOrder,
 		IsActive:     true,
 		CreatedBy:    &createdBy.ID,
@@ -240,7 +241,7 @@ func (s *SOPCategoryService) UpdateCategory(
 		}
 
 		update["slug"] = slug
-		update["dropbox_path"] = "SOPS/" + *req.Name
+		update["dropbox_path"] = "SOPS/" + url.PathEscape(*req.Name)
 		nameChanged = true
 	}
 
@@ -403,8 +404,12 @@ func (s *SOPCategoryService) GetFileDownloadLink(
 		return "", errors.New("dropbox is not configured")
 	}
 
-	// Construct full path
-	fullPath := filepath.Join(category.DropboxPath, filePath)
+	// Construct full path - decode URL-encoded DropboxPath if needed
+	dropboxPath := category.DropboxPath
+	if decoded, err := url.PathUnescape(dropboxPath); err == nil {
+		dropboxPath = decoded
+	}
+	fullPath := filepath.Join(dropboxPath, filePath)
 
 	// Get download link
 	link, err := s.dropboxService.GetFileDownloadLink(fullPath)

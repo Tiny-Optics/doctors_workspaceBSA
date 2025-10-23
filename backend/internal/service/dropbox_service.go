@@ -213,6 +213,16 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 		fmt.Printf("Warning: Failed to reset failure count: %v\n", err)
 	}
 
+	// Reload configuration from database to ensure cached config is in sync
+	// This is critical to prevent refresh token issues after 24+ hours
+	if err := s.loadConfigFromDB(ctx); err != nil {
+		fmt.Printf("Warning: Failed to reload config after refresh: %v\n", err)
+		// Don't return error here as the refresh was successful
+		// The cached config will be updated on next operation
+	} else {
+		fmt.Println("Successfully reloaded Dropbox config from database after token refresh")
+	}
+
 	fmt.Println("Successfully refreshed Dropbox access token")
 	return nil
 }
@@ -478,6 +488,11 @@ func (s *DropboxService) getFullPath(relativePath string, parentFolder string) s
 	// Clean the relative path
 	relativePath = strings.TrimPrefix(relativePath, "/")
 	relativePath = strings.TrimSuffix(relativePath, "/")
+
+	// Decode URL-encoded path (for categories with spaces)
+	if decoded, err := url.PathUnescape(relativePath); err == nil {
+		relativePath = decoded
+	}
 
 	// If parent folder is empty, use root
 	if parentFolder == "" {

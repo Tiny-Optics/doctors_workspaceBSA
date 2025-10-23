@@ -67,7 +67,7 @@ export const sopService = {
    */
   async getCategoryBySlug(slug: string): Promise<SOPCategory | null> {
     const response = await this.listCategories({ search: slug })
-    const category = response.categories.find(c => c.slug === slug)
+    const category = response.categories?.find(c => c.slug === slug)
     return category || null
   },
   

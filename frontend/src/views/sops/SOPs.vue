@@ -105,7 +105,7 @@ async function loadCategories() {
   try {
     const response = await sopService.listCategories({ limit: 100 })
     // Only show active categories to regular users
-    categories.value = response.categories.filter(c => c.isActive)
+    categories.value = (response.categories || []).filter(c => c.isActive)
   } catch (error) {
     console.error('Failed to load SOP categories:', error)
   } finally {
