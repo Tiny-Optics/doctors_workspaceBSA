@@ -1,7 +1,7 @@
 <template>
   <aside 
     :class="[
-      'bg-white shadow-lg border-r border-gray-200 flex flex-col h-screen transition-all duration-300 ease-in-out',
+      'bg-white shadow-lg border-r border-gray-200 flex flex-col h-screen transition-all duration-300 ease-in-out overflow-hidden',
       isCollapsed ? 'w-20' : 'w-64'
     ]"
   >
@@ -39,7 +39,7 @@
     </div>
 
     <!-- Navigation Menu -->
-    <nav class="flex-1 px-4 py-6 space-y-2">
+    <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400">
       <template v-for="item in navigationItems" :key="item.name">
         <router-link
           :to="item.to"
@@ -328,3 +328,35 @@ const userRole = computed(() => {
   return getUserRoleDisplayName(user.value.role as any)
 })
 </script>
+
+<style scoped>
+/* Custom scrollbar styling for the navigation menu */
+nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+nav::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+nav::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+nav::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Firefox scrollbar styling */
+nav {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+nav:hover {
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+</style>
