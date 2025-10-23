@@ -147,6 +147,11 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 
 	fmt.Println("Refreshing Dropbox access token...")
 
+	// Debug logging (remove in production)
+	fmt.Printf("DEBUG: Using AppKey: %s\n", s.cachedConfig.AppKey)
+	fmt.Printf("DEBUG: Using AppSecret: %s (length: %d)\n", s.cachedConfig.AppSecret, len(s.cachedConfig.AppSecret))
+	fmt.Printf("DEBUG: Using RefreshToken: %s (length: %d)\n", s.cachedConfig.RefreshToken, len(s.cachedConfig.RefreshToken))
+
 	// Prepare refresh request (form-urlencoded)
 	formData := url.Values{}
 	formData.Set("grant_type", "refresh_token")
@@ -174,6 +179,9 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 
 	if resp.StatusCode != http.StatusOK {
 		errMsg := fmt.Sprintf("status %d: %s", resp.StatusCode, string(body))
+		fmt.Printf("DEBUG: Dropbox token refresh failed with status %d\n", resp.StatusCode)
+		fmt.Printf("DEBUG: Response body: %s\n", string(body))
+		fmt.Printf("DEBUG: Request form data: %s\n", formData.Encode())
 		s.handleRefreshFailure(ctx, errors.New(errMsg))
 		return fmt.Errorf("%w: %s", ErrTokenRefreshFailed, errMsg)
 	}
