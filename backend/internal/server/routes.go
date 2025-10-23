@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"os"
 
 	"backend/internal/handlers"
 	"backend/internal/middleware"
@@ -44,6 +45,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	registryFormRepo := repository.NewRegistryFormRepository(db)
 	registrySubmissionRepo := repository.NewRegistrySubmissionRepository(db)
 	referralConfigRepo := repository.NewReferralConfigRepository(db)
+	passwordResetRepo := repository.NewPasswordResetRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
@@ -75,6 +77,21 @@ func (s *Server) RegisterRoutes() http.Handler {
 	)
 	referralService := service.NewReferralService(referralConfigRepo, auditRepo)
 
+	// Initialize password reset service
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "default-secret-change-in-production"
+	}
+	passwordResetService := service.NewPasswordResetService(
+		userRepo,
+		passwordResetRepo,
+		auditRepo,
+		emailService,
+		encryptionService,
+		registryService,
+		jwtSecret,
+	)
+
 	// Initialize handlers
 	authHandler := handlers.NewAuthHandler(authService)
 	userHandler := handlers.NewUserHandler(userService)
@@ -84,6 +101,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	dropboxAdminHandler := handlers.NewDropboxAdminHandler(dropboxOAuthService)
 	registryHandler := handlers.NewRegistryHandler(registryService, encryptionService)
 	referralHandler := handlers.NewReferralHandler(referralService)
+	passwordResetHandler := handlers.NewPasswordResetHandler(passwordResetService)
+	smtpHandler := handlers.NewSMTPHandler(registryService)
 
 	// API routes group
 	api := r.Group("/api")
@@ -92,7 +111,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 		auth := api.Group("/auth")
 		{
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/register", userHandler.RegisterUser)
 			auth.POST("/refresh", authHandler.RefreshToken)
+
+			// Password reset routes (public)
+			auth.POST("/forgot-password", passwordResetHandler.ForgotPassword)
+			auth.POST("/validate-reset-code", passwordResetHandler.ValidateResetCode)
+			auth.POST("/reset-password", passwordResetHandler.ResetPassword)
 
 			// Protected auth routes
 			authProtected := auth.Group("")
@@ -116,6 +141,12 @@ func (s *Server) RegisterRoutes() http.Handler {
 			users.POST("/:id/deactivate", middleware.RequirePermission(models.PermManageUsers), userHandler.DeactivateUser)
 			users.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), userHandler.DeleteUser)
 		}
+
+		// Public institution routes (for registration)
+		api.GET("/institutions/public", institutionHandler.ListPublicInstitutions)
+
+		// Public SMTP status route (for forgot password)
+		api.GET("/smtp/status", smtpHandler.CheckSMTPConfiguration)
 
 		// Institution routes (all protected)
 		institutions := api.Group("/institutions")

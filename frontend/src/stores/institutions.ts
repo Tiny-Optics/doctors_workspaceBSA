@@ -70,6 +70,43 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     }
   }
 
+  // Public method to fetch institutions without authentication (for registration)
+  async function fetchPublicInstitutions(): Promise<void> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch('/api/institutions/public', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to fetch institutions'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = 'Failed to fetch institutions'
+        }
+        throw new Error(errorMessage)
+      }
+
+      const data: InstitutionsListResponse = await response.json()
+      institutions.value = data.institutions || []
+      total.value = data.total || 0
+      isLoading.value = false
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch institutions'
+      institutions.value = []
+      total.value = 0
+      isLoading.value = false
+      throw err
+    }
+  }
+
   async function fetchInstitution(id: string): Promise<Institution | null> {
     isLoading.value = true
     error.value = null
@@ -276,6 +313,7 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     error,
     // Actions
     fetchInstitutions,
+    fetchPublicInstitutions,
     fetchInstitution,
     createInstitution,
     updateInstitution,

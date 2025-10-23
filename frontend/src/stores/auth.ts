@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { User, LoginRequest, LoginResponse } from '@/types/user'
+import type { User, LoginRequest, LoginResponse, RegisterUserRequest } from '@/types/user'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -69,6 +69,57 @@ export const useAuthStore = defineStore('auth', () => {
         error.value = err
       } else {
         error.value = 'An unexpected error occurred during login'
+      }
+      throw new Error(error.value)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function register(userData: RegisterUserRequest): Promise<void> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Registration failed. Please try again.'
+        
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          // If JSON parsing fails, use status-based messages
+          if (response.status === 400) {
+            errorMessage = 'Invalid registration data. Please check your information.'
+          } else if (response.status === 409) {
+            errorMessage = 'Email or username already exists. Please use different credentials.'
+          } else if (response.status === 500) {
+            errorMessage = 'Server error. Please try again later.'
+          } else if (response.status === 0 || !response.status) {
+            errorMessage = 'Cannot connect to server. Please check your connection.'
+          }
+        }
+        
+        throw new Error(errorMessage)
+      }
+
+      // Registration successful - user is created but deactivated
+      // No need to set user/token since account is deactivated
+    } catch (err) {
+      if (err instanceof Error) {
+        error.value = err.message
+      } else if (typeof err === 'string') {
+        error.value = err
+      } else {
+        error.value = 'An unexpected error occurred during registration'
       }
       throw new Error(error.value)
     } finally {
@@ -268,6 +319,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // Actions
     login,
+    register,
     logout,
     refreshAccessToken,
     fetchCurrentUser,

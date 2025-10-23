@@ -60,6 +60,19 @@ type CreateUserRequest struct {
 	PhoneNumber        string     `json:"phoneNumber,omitempty"`
 }
 
+// RegisterUserRequest represents the request for user self-registration
+type RegisterUserRequest struct {
+	Username           string `json:"username" binding:"required"`
+	Email              string `json:"email" binding:"required,email"`
+	Password           string `json:"password" binding:"required"`
+	FirstName          string `json:"firstName" binding:"required"`
+	LastName           string `json:"lastName" binding:"required"`
+	InstitutionID      string `json:"institutionId" binding:"required"`
+	Specialty          string `json:"specialty,omitempty"`
+	RegistrationNumber string `json:"registrationNumber,omitempty"`
+	PhoneNumber        string `json:"phoneNumber,omitempty"`
+}
+
 // UpdateUserRequest represents the request to update a user
 type UpdateUserRequest struct {
 	FirstName          *string     `json:"firstName,omitempty"`
@@ -145,6 +158,42 @@ func (req *CreateUserRequest) Validate() error {
 		}
 	} else if req.AdminLevel != AdminLevelNone {
 		return errors.New("non-admin roles cannot have an admin level")
+	}
+
+	// Validate profile fields
+	if len(req.FirstName) < 2 || len(req.FirstName) > 100 {
+		return ErrProfileFieldTooShort
+	}
+	if len(req.LastName) < 2 || len(req.LastName) > 100 {
+		return ErrProfileFieldTooShort
+	}
+
+	// Validate institution ID
+	if req.InstitutionID == "" {
+		return errors.New("institution ID is required")
+	}
+	if _, err := primitive.ObjectIDFromHex(req.InstitutionID); err != nil {
+		return errors.New("invalid institution ID format")
+	}
+
+	return nil
+}
+
+// Validate validates the RegisterUserRequest
+func (req *RegisterUserRequest) Validate() error {
+	// Validate email
+	if !emailRegex.MatchString(req.Email) {
+		return ErrInvalidEmail
+	}
+
+	// Validate username
+	if !usernameRegex.MatchString(req.Username) {
+		return ErrInvalidUsername
+	}
+
+	// Validate password
+	if err := ValidatePassword(req.Password); err != nil {
+		return err
 	}
 
 	// Validate profile fields

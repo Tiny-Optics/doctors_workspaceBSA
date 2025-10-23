@@ -322,6 +322,20 @@ func (s *RegistryService) UpdateSMTPConfig(
 	}, nil
 }
 
+// GetPublicSMTPConfig retrieves SMTP configuration for public use (password reset)
+func (s *RegistryService) GetPublicSMTPConfig(ctx context.Context) (*models.SMTPConfig, error) {
+	config, err := s.configRepo.GetConfig(ctx)
+	if err != nil {
+		if err == repository.ErrRegistryConfigNotFound {
+			return nil, ErrSMTPNotConfigured
+		}
+		return nil, err
+	}
+
+	// Return the full SMTP config including password for email sending
+	return &config.SMTPConfig, nil
+}
+
 // Form Schema Management
 
 // CreateFormSchema creates a new form schema

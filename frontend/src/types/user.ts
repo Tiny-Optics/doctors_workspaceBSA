@@ -50,6 +50,18 @@ export interface CreateUserRequest {
   phoneNumber?: string
 }
 
+export interface RegisterUserRequest {
+  username: string
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+  institutionId: string
+  specialty?: string
+  registrationNumber?: string
+  phoneNumber?: string
+}
+
 export interface UpdateUserRequest {
   firstName?: string
   lastName?: string
@@ -164,5 +176,35 @@ export function canManageUser(currentUser: User, targetUser: User): boolean {
   }
 
   return false
+}
+
+// Forgot Password Types
+export interface ForgotPasswordRequest {
+  email: string
+}
+
+export interface ForgotPasswordResponse {
+  message: string
+  success: boolean
+}
+
+export interface ValidateResetCodeRequest {
+  code: string
+}
+
+export interface ValidateResetCodeResponse {
+  token: string
+  message: string
+  success: boolean
+}
+
+export interface ResetPasswordRequest {
+  token: string
+  newPassword: string
+}
+
+export interface ResetPasswordResponse {
+  message: string
+  success: boolean
 }
 

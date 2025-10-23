@@ -350,3 +350,28 @@ func (h *InstitutionHandler) ListInstitutions(c *gin.Context) {
 	})
 }
 
+// ListPublicInstitutions godoc
+// @Summary List all active institutions (public)
+// @Description Get a list of all active institutions for public access (registration)
+// @Tags institutions
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /institutions/public [get]
+func (h *InstitutionHandler) ListPublicInstitutions(c *gin.Context) {
+	// Only return active institutions for public access
+	isActive := true
+
+	// Get all active institutions (no pagination for public access)
+	institutions, count, err := h.institutionService.ListInstitutions(c.Request.Context(), nil, &isActive, "", 1000, 0)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"institutions": institutions,
+		"total":        count,
+	})
+}
