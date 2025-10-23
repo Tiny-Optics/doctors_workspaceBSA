@@ -92,6 +92,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		auth := api.Group("/auth")
 		{
 			auth.POST("/login", authHandler.Login)
+			auth.POST("/register", userHandler.RegisterUser)
 			auth.POST("/refresh", authHandler.RefreshToken)
 
 			// Protected auth routes
@@ -116,6 +117,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 			users.POST("/:id/deactivate", middleware.RequirePermission(models.PermManageUsers), userHandler.DeactivateUser)
 			users.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), userHandler.DeleteUser)
 		}
+
+		// Public institution routes (for registration)
+		api.GET("/institutions/public", institutionHandler.ListPublicInstitutions)
 
 		// Institution routes (all protected)
 		institutions := api.Group("/institutions")

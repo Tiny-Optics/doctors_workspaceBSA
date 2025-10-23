@@ -57,7 +57,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *models.CreateUserRequ
 
 	// Normalize email to lowercase for case-insensitive comparison
 	normalizedEmail := strings.ToLower(strings.TrimSpace(req.Email))
-	
+
 	// Check if email already exists
 	emailExists, err := s.userRepo.EmailExists(ctx, normalizedEmail)
 	if err != nil {
@@ -122,6 +122,87 @@ func (s *UserService) CreateUser(ctx context.Context, req *models.CreateUserRequ
 			"email":       user.Email,
 			"role":        user.Role,
 			"admin_level": user.AdminLevel,
+		},
+	})
+
+	return user, nil
+}
+
+// RegisterUser creates a new user through self-registration (deactivated by default)
+func (s *UserService) RegisterUser(ctx context.Context, req *models.RegisterUserRequest, ipAddress string) (*models.User, error) {
+	// Validate request
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
+	// Normalize email to lowercase for case-insensitive comparison
+	normalizedEmail := strings.ToLower(strings.TrimSpace(req.Email))
+
+	// Check if email already exists
+	emailExists, err := s.userRepo.EmailExists(ctx, normalizedEmail)
+	if err != nil {
+		return nil, err
+	}
+	if emailExists {
+		return nil, repository.ErrDuplicateEmail
+	}
+
+	// Check if username already exists
+	usernameExists, err := s.userRepo.UsernameExists(ctx, req.Username)
+	if err != nil {
+		return nil, err
+	}
+	if usernameExists {
+		return nil, repository.ErrDuplicateUsername
+	}
+
+	// Hash password
+	passwordHash, err := s.authService.HashPassword(req.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse institution ID
+	institutionID, err := primitive.ObjectIDFromHex(req.InstitutionID)
+	if err != nil {
+		return nil, errors.New("invalid institution ID format")
+	}
+
+	// Create user (deactivated by default for self-registration)
+	user := &models.User{
+		Username:     req.Username,
+		Email:        normalizedEmail,
+		PasswordHash: passwordHash,
+		Role:         models.RolePhysician,  // Default role for self-registration
+		AdminLevel:   models.AdminLevelNone, // No admin privileges for self-registration
+		IsActive:     false,                 // Deactivated by default - requires admin approval
+		Profile: models.UserProfile{
+			FirstName:          req.FirstName,
+			LastName:           req.LastName,
+			InstitutionID:      &institutionID,
+			Specialty:          req.Specialty,
+			RegistrationNumber: req.RegistrationNumber,
+			PhoneNumber:        req.PhoneNumber,
+		},
+		CreatedBy: nil, // Self-registration, no creator
+	}
+
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		return nil, err
+	}
+
+	// Log audit for self-registration
+	s.auditRepo.Create(ctx, &models.AuditLog{
+		UserID:      &user.ID,
+		PerformedBy: nil, // Self-registration
+		Action:      models.AuditActionUserRegistered,
+		IPAddress:   ipAddress,
+		Details: map[string]interface{}{
+			"username":          user.Username,
+			"email":             user.Email,
+			"role":              user.Role,
+			"is_active":         user.IsActive,
+			"registration_type": "self_registration",
 		},
 	})
 

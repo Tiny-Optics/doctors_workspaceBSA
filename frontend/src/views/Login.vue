@@ -128,7 +128,13 @@
 
         <!-- Additional Info -->
         <div class="mt-6 text-center text-sm text-gray-600">
-          <p>Don't have an account? Contact your administrator.</p>
+          <p>
+            Don't have an account? 
+            <router-link to="/register" class="font-medium text-bloodsa-red hover:text-red-700 transition-colors">
+              Register here
+            </router-link>
+            or contact your administrator.
+          </p>
         </div>
       </div>
 

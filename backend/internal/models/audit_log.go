@@ -11,6 +11,7 @@ type AuditAction string
 
 const (
 	AuditActionUserCreated            AuditAction = "user_created"
+	AuditActionUserRegistered         AuditAction = "user_registered"
 	AuditActionUserUpdated            AuditAction = "user_updated"
 	AuditActionUserDeleted            AuditAction = "user_deleted"
 	AuditActionUserDeactivated        AuditAction = "user_deactivated"

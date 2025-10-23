@@ -50,6 +50,18 @@ export interface CreateUserRequest {
   phoneNumber?: string
 }
 
+export interface RegisterUserRequest {
+  username: string
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+  institutionId: string
+  specialty?: string
+  registrationNumber?: string
+  phoneNumber?: string
+}
+
 export interface UpdateUserRequest {
   firstName?: string
   lastName?: string

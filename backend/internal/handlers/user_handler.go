@@ -68,6 +68,39 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, user)
 }
 
+// RegisterUser godoc
+// @Summary Register a new user
+// @Description Self-registration endpoint for new users (creates deactivated account)
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body models.RegisterUserRequest true "User registration information"
+// @Success 201 {object} models.User
+// @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Router /auth/register [post]
+func (h *UserHandler) RegisterUser(c *gin.Context) {
+	var req models.RegisterUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ipAddress := middleware.GetIPAddress(c)
+
+	user, err := h.userService.RegisterUser(c.Request.Context(), &req, ipAddress)
+	if err != nil {
+		statusCode := http.StatusBadRequest
+		if err == repository.ErrDuplicateEmail || err == repository.ErrDuplicateUsername {
+			statusCode = http.StatusConflict
+		}
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, user)
+}
+
 // GetUser godoc
 // @Summary Get a user by ID
 // @Description Get user information by ID
