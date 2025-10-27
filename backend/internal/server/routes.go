@@ -64,6 +64,13 @@ func (s *Server) RegisterRoutes() http.Handler {
 	dropboxOAuthService := service.NewDropboxOAuthService(dropboxConfigRepo, auditRepo, encryptionService, dropboxService)
 	sopCategoryService := service.NewSOPCategoryService(sopCategoryRepo, dropboxService, auditRepo, userRepo)
 
+	// Initialize Dropbox background refresh service
+	dropboxRefreshService := service.NewDropboxRefreshService(dropboxService)
+	dropboxRefreshService.Start()
+
+	// Store reference for graceful shutdown
+	s.dropboxRefreshService = dropboxRefreshService
+
 	// Initialize email and registry services
 	emailService := service.NewEmailService(encryptionService)
 	registryService := service.NewRegistryService(

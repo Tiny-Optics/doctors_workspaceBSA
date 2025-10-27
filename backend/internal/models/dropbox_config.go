@@ -36,13 +36,13 @@ type DropboxConfig struct {
 	CreatedBy *primitive.ObjectID `bson:"created_by,omitempty" json:"createdBy,omitempty"`
 }
 
-// IsTokenExpired checks if the access token has expired or will expire soon (within 5 minutes)
+// IsTokenExpired checks if the access token has expired or will expire soon (within 30 minutes)
 func (d *DropboxConfig) IsTokenExpired() bool {
 	if d.TokenExpiry.IsZero() {
 		return true
 	}
-	// Consider expired if less than 5 minutes remaining
-	return time.Now().Add(5 * time.Minute).After(d.TokenExpiry)
+	// Consider expired if less than 30 minutes remaining (more conservative for background refresh)
+	return time.Now().Add(30 * time.Minute).After(d.TokenExpiry)
 }
 
 // NeedsReconnection checks if the configuration needs manual reconnection
