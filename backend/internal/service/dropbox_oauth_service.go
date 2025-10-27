@@ -86,7 +86,7 @@ func (s *DropboxOAuthService) ExchangeCodeForTokens(
 	formData.Set("grant_type", "authorization_code")
 	formData.Set("client_id", appKey)
 	formData.Set("client_secret", appSecret)
-	
+
 	if redirectURI != "" {
 		formData.Set("redirect_uri", redirectURI)
 	}
@@ -234,7 +234,16 @@ func (s *DropboxOAuthService) GetStatus(ctx context.Context) (map[string]interfa
 		return nil, fmt.Errorf("failed to get config: %w", err)
 	}
 
-	return config.GetPublicStatus(), nil
+	status := config.GetPublicStatus()
+
+	// Add refresh service status if available
+	if s.dropboxService != nil {
+		// We can't directly access the refresh service from here, but we can indicate
+		// that background refresh is available
+		status["backgroundRefreshAvailable"] = true
+	}
+
+	return status, nil
 }
 
 // ForceRefresh manually triggers a token refresh

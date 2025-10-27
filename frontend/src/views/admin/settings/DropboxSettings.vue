@@ -25,7 +25,7 @@
           <div class="ml-3">
             <h3 class="text-sm font-medium text-blue-800">Automatic Token Refresh Active</h3>
             <p class="text-sm text-blue-700 mt-1">
-              Access tokens automatically refresh every ~4 hours. You authorized once, and the system handles the rest. No daily action needed! 🎉
+              Access tokens automatically refresh every ~3 hours. You authorized once, and the system handles the rest. No daily action needed! 🎉
             </p>
           </div>
         </div>
@@ -101,7 +101,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span class="invisible group-hover:visible absolute left-0 top-6 w-48 bg-gray-900 text-white text-xs rounded p-2 z-10">
-                  Auto-refreshes every ~4 hours. No action needed!
+                  Auto-refreshes every ~3 hours. No action needed!
                 </span>
               </span>
             </p>

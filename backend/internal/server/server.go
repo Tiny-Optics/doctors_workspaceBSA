@@ -10,30 +10,38 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"backend/internal/database"
+	"backend/internal/service"
 )
 
 type Server struct {
 	port int
 
-	db database.Service
+	db                    database.Service
+	dropboxRefreshService *service.DropboxRefreshService
 }
 
-func NewServer() *http.Server {
+func NewServer() *Server {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	NewServer := &Server{
+	server := &Server{
 		port: port,
-
-		db: database.New(),
+		db:   database.New(),
 	}
 
-	// Declare Server config
-	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", NewServer.port),
-		Handler:      NewServer.RegisterRoutes(),
+	return server
+}
+
+func (s *Server) GetHTTPServer() *http.Server {
+	return &http.Server{
+		Addr:         fmt.Sprintf(":%d", s.port),
+		Handler:      s.RegisterRoutes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
+}
 
-	return server
+func (s *Server) StopDropboxRefreshService() {
+	if s.dropboxRefreshService != nil {
+		s.dropboxRefreshService.Stop()
+	}
 }
