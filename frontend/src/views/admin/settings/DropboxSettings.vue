@@ -374,8 +374,7 @@ const oauthStep = ref(1)
 const authConfig = ref({
   appKey: '',
   appSecret: '',
-  parentFolder: '',
-  redirectUri: ''
+  parentFolder: ''
 })
 const authorizationUrl = ref('')
 const authorizationCode = ref('')
@@ -444,7 +443,7 @@ async function handleCompleteAuth() {
     
     // Reset form and reload status
     oauthStep.value = 1
-    authConfig.value = { appKey: '', appSecret: '', parentFolder: '', redirectUri: '' }
+    authConfig.value = { appKey: '', appSecret: '', parentFolder: '' }
     authorizationCode.value = ''
     authorizationUrl.value = ''
     
