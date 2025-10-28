@@ -57,7 +57,7 @@ func (s *DropboxOAuthService) GenerateAuthorizationURL(appKey, redirectURI strin
 	params.Add("client_id", appKey)
 	params.Add("response_type", "code")
 	params.Add("token_access_type", "offline") // Request refresh token
-	
+
 	// Don't add redirect_uri at all - Dropbox will show code to copy manually
 	// This avoids redirect_uri mismatch issues between authorize and token exchange
 
@@ -85,7 +85,7 @@ func (s *DropboxOAuthService) ExchangeCodeForTokens(
 	formData.Set("grant_type", "authorization_code")
 	formData.Set("client_id", appKey)
 	formData.Set("client_secret", appSecret)
-	
+
 	// Don't include redirect_uri in token exchange - matches the authorize step
 	// This avoids "invalid_grant" errors from redirect_uri mismatch
 
