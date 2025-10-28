@@ -8,7 +8,7 @@
     <div class="max-w-md w-full space-y-8 relative z-10">
       <!-- Header -->
       <div class="text-center">
-        <img src="/BLOODSA-SVG-Logo.svg" alt="BloodSA Logo" class="w-24 h-24 object-contain mx-auto mb-4" />
+        <img src="/BLOODSA-Logo.svg" alt="BloodSA Logo" class="w-24 h-24 object-contain mx-auto mb-4" />
         <h2 class="text-3xl font-bold text-gray-900">Reset Your Password</h2>
         <p class="mt-2 text-sm text-gray-600">
           Follow the steps below to reset your password

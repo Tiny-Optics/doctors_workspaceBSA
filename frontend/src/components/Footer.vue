@@ -6,15 +6,14 @@
         <div class="col-span-1 md:col-span-2">
           <div class="flex items-center space-x-3 mb-4">
             <img 
-              src="/BLOODSA-SVG-Logo.svg" 
+              src="/BLOODSA-Logo.svg" 
               alt="BloodSA Logo" 
-              class="w-32 h-32 object-contain"
+              class="w-12 h-12 object-contain"
             />
             <span class="text-lg font-bold text-bloodsa-red">Doctor's Workspace</span>
           </div>
           <p class="text-gray-600 text-sm leading-relaxed">
-            The Blood and Marrow Transplant Society of South Africa (BLOODSA) is dedicated to advancing 
-            hematopoietic stem cell transplantation and cellular therapy in South Africa.
+            BLOODSA Foundation NPC is registered in South Africa with Company Reg. No: 2021/990954/08, Non-Profit Organisation Reg. No: 268-421 NPO  and Public Benefit Organisation Ref. No: 930076265.
           </p>
         </div>
 
@@ -22,10 +21,10 @@
         <div>
           <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Quick Links</h3>
           <ul class="space-y-2">
-            <li><a href="#" class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200">About BLOODSA</a></li>
-            <li><a href="#" class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200">Membership</a></li>
-            <li><a href="#" class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200">Resources</a></li>
-            <li><a href="#" class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200">Events</a></li>
+            <li><a href="https://bloodsa.org.za/about/" target="_blank" class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200">About BLOODSA</a></li>
+            <li><a href="https://bloodsa.org.za/contact/" target="_blank" class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200">Contact Us</a></li>
+            <li><a href="https://bloodsa.org.za/resources/" target="_blank" class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200">Resources</a></li>
+            <li><a href="https://bloodsa.org.za/upcoming-events/" target="_blank" class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200">Events</a></li>
           </ul>
         </div>
 
@@ -35,18 +34,18 @@
           <ul class="space-y-2">
             <li>
               <a 
-                href="mailto:info@bloodsa.org.za" 
+                href="mailto:admin@bloodsa.org.za" 
                 class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200"
               >
-                info@bloodsa.org.za
+                admin@bloodsa.org.za 
               </a>
             </li>
             <li>
               <a 
-                href="tel:+27111234567" 
+                href="tel:+27214043070" 
                 class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200"
               >
-                +27 (0) 11 123 4567
+              +27 (0) 21 404 3070
               </a>
             </li>
             <li>
@@ -56,7 +55,7 @@
                 rel="noopener noreferrer"
                 class="text-gray-600 hover:text-bloodsa-red text-sm transition-colors duration-200"
               >
-                Johannesburg, South Africa
+              Room E4-58, E5 Haematology Clinic E-floor, New Main Building, Groote Schuur Hospital, Observatory, Cape Town, 7935
               </a>
             </li>
           </ul>
