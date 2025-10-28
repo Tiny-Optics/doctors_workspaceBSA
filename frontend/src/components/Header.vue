@@ -6,9 +6,9 @@
         <router-link to="/dashboard" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
           <div class="relative">
             <img 
-              src="/BLOODSA-SVG-Logo.svg" 
+              src="/BLOODSA-Logo.svg" 
               alt="BloodSA Logo" 
-              class="w-32 h-32 object-contain"
+              class="w-12 h-12 object-contain"
             />
           </div>
           <h1 class="text-xl font-bold text-bloodsa-red">Doctor's Workspace</h1>
