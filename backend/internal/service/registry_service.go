@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"mime/multipart"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -26,13 +27,14 @@ var (
 
 // RegistryService handles business logic for the registry
 type RegistryService struct {
-	configRepo     *repository.RegistryConfigRepository
-	formRepo       *repository.RegistryFormRepository
-	submissionRepo *repository.RegistrySubmissionRepository
-	userRepo       *repository.UserRepository
-	auditRepo      *repository.AuditRepository
-	dropboxService *DropboxService
-	emailService   *EmailService
+	configRepo      *repository.RegistryConfigRepository
+	formRepo        *repository.RegistryFormRepository
+	submissionRepo  *repository.RegistrySubmissionRepository
+	userRepo        *repository.UserRepository
+	institutionRepo *repository.InstitutionRepository
+	auditRepo       *repository.AuditRepository
+	dropboxService  *DropboxService
+	emailService    *EmailService
 }
 
 // NewRegistryService creates a new RegistryService
@@ -41,18 +43,20 @@ func NewRegistryService(
 	formRepo *repository.RegistryFormRepository,
 	submissionRepo *repository.RegistrySubmissionRepository,
 	userRepo *repository.UserRepository,
+	institutionRepo *repository.InstitutionRepository,
 	auditRepo *repository.AuditRepository,
 	dropboxService *DropboxService,
 	emailService *EmailService,
 ) *RegistryService {
 	return &RegistryService{
-		configRepo:     configRepo,
-		formRepo:       formRepo,
-		submissionRepo: submissionRepo,
-		userRepo:       userRepo,
-		auditRepo:      auditRepo,
-		dropboxService: dropboxService,
-		emailService:   emailService,
+		configRepo:      configRepo,
+		formRepo:        formRepo,
+		submissionRepo:  submissionRepo,
+		userRepo:        userRepo,
+		institutionRepo: institutionRepo,
+		auditRepo:       auditRepo,
+		dropboxService:  dropboxService,
+		emailService:    emailService,
 	}
 }
 
@@ -603,8 +607,28 @@ func (s *RegistryService) SubmitForm(
 		return nil, err
 	}
 
-	// Upload documents to Dropbox
-	dropboxPath := fmt.Sprintf("Registry_Submissions/%s/%s", user.Username, submission.ID.Hex())
+	// Build new Dropbox path: Submissions/{institution name}/{firstName lastName}/{formId}/{submissionId}
+	institutionName := "Unknown Institution"
+	if user.Profile.InstitutionID != nil {
+		if inst, err := s.institutionRepo.FindByID(ctx, *user.Profile.InstitutionID); err == nil && inst != nil {
+			institutionName = inst.Name
+		}
+	}
+	userFullName := user.Profile.FirstName + " " + user.Profile.LastName
+	formName := schema.FormName
+	submissionID := submission.ID.Hex()
+
+	// URL-escape path segments to handle spaces/special characters
+	escInstitution := url.PathEscape(institutionName)
+	escUser := url.PathEscape(userFullName)
+	escForm := url.PathEscape(formName)
+	dropboxPath := fmt.Sprintf("Submissions/%s/%s/%s/%s", escInstitution, escUser, escForm, submissionID)
+
+	// Ensure the folder exists in Dropbox
+	if err := s.dropboxService.CreateFolder(dropboxPath); err != nil {
+		return nil, fmt.Errorf("failed to create submission folder in Dropbox: %w", err)
+	}
+
 	submission.DocumentsPath = dropboxPath
 
 	uploadedFiles := []string{}

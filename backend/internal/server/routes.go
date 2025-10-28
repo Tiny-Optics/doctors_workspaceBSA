@@ -78,6 +78,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		registryFormRepo,
 		registrySubmissionRepo,
 		userRepo,
+		institutionRepo,
 		auditRepo,
 		dropboxService,
 		emailService,
