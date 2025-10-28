@@ -147,9 +147,16 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 
 	fmt.Println("Refreshing Dropbox access token...")
 
+	// Decrypt the app secret before using it
+	decryptedAppSecret, err := s.encryptionService.Decrypt(s.cachedConfig.AppSecret)
+	if err != nil {
+		s.handleRefreshFailure(ctx, err)
+		return fmt.Errorf("failed to decrypt app secret: %w", err)
+	}
+
 	// Debug logging (remove in production)
 	fmt.Printf("DEBUG: Using AppKey: %s\n", s.cachedConfig.AppKey)
-	fmt.Printf("DEBUG: Using AppSecret: %s (length: %d)\n", s.cachedConfig.AppSecret, len(s.cachedConfig.AppSecret))
+	fmt.Printf("DEBUG: Using AppSecret: %s (length: %d)\n", decryptedAppSecret, len(decryptedAppSecret))
 	fmt.Printf("DEBUG: Using RefreshToken: %s (length: %d)\n", s.cachedConfig.RefreshToken, len(s.cachedConfig.RefreshToken))
 
 	// Prepare refresh request (form-urlencoded)
@@ -157,7 +164,7 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	formData.Set("grant_type", "refresh_token")
 	formData.Set("refresh_token", s.cachedConfig.RefreshToken)
 	formData.Set("client_id", s.cachedConfig.AppKey)
-	formData.Set("client_secret", s.cachedConfig.AppSecret)
+	formData.Set("client_secret", decryptedAppSecret)
 
 	// Call Dropbox token endpoint with form-urlencoded data
 	resp, err := http.Post(
