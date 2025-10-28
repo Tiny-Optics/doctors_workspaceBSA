@@ -103,7 +103,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
           <!-- Process Outline Card -->
-          <div class="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-bloodsa-red transform hover:-translate-y-1 cursor-pointer">
+          <div @click="showProcessModal = true" class="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-gray-100 hover:border-bloodsa-red transform hover:-translate-y-1 cursor-pointer">
             <div class="p-6">
               <div class="w-full h-48 bg-gradient-to-br from-yellow-200 to-yellow-300 rounded-lg flex items-center justify-center mb-6">
                 <div class="text-center">
@@ -173,6 +173,73 @@
         </div>
       </div>
     </section>
+    
+    <!-- Modal for Process Outline PDFs -->
+    <div v-if="showProcessModal" class="fixed inset-0 z-50">
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-black/50" @click="showProcessModal = false"></div>
+
+      <!-- Modal container -->
+      <div class="absolute inset-0 flex items-center justify-center p-4" @click.self="showProcessModal = false">
+        <div class="w-full max-w-6xl bg-white rounded-xl shadow-2xl overflow-hidden">
+          <!-- Header -->
+          <div class="flex items-center justify-between px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold text-gray-800">Process Outline</h2>
+            <button class="text-gray-500 hover:text-gray-700" @click="showProcessModal = false" aria-label="Close">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <!-- Tabs -->
+          <div class="px-6 pt-4">
+            <div class="flex space-x-2">
+              <button
+                class="px-3 py-2 rounded-md text-sm font-medium border"
+                :class="activePdf === 'summary' ? 'bg-bloodsa-red text-white border-bloodsa-red' : 'bg-white text-gray-700 border-gray-300'"
+                @click="activePdf = 'summary'"
+              >Setup Summary</button>
+              <button
+                class="px-3 py-2 rounded-md text-sm font-medium border"
+                :class="activePdf === 'training' ? 'bg-bloodsa-red text-white border-bloodsa-red' : 'bg-white text-gray-700 border-gray-300'"
+                @click="activePdf = 'training'"
+              >REDCap User Training</button>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="px-6 pb-6 pt-4">
+            <div class="grid grid-cols-1 gap-4">
+              <!-- PDF Viewer -->
+              <div class="w-full h-[70vh] border rounded-lg overflow-hidden bg-gray-50">
+                <iframe
+                  v-if="activePdf === 'summary'"
+                  :src="pdfSummaryUrl"
+                  class="w-full h-full"
+                  frameborder="0"
+                  title="Setup Summary PDF"
+                ></iframe>
+                <iframe
+                  v-else
+                  :src="pdfTrainingUrl"
+                  class="w-full h-full"
+                  frameborder="0"
+                  title="REDCap User Training PDF"
+                ></iframe>
+              </div>
+
+              <!-- Download links -->
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-600">PDF opens inline; you can also download it.</div>
+                <div class="space-x-2">
+                  <a :href="pdfSummaryUrl" download class="px-3 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-100">Download Setup Summary</a>
+                  <a :href="pdfTrainingUrl" download class="px-3 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-100">Download REDCap Training</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -182,6 +249,13 @@ import { registryService } from '@/services/registryService'
 
 const registryConfig = ref<any>(null)
 const videoLoaded = ref(false)
+const showProcessModal = ref(false)
+const activePdf = ref<'summary' | 'training'>('summary')
+
+// Public assets are served from the root in Vite
+const pdfSummaryUrl = '/AHoperSetupSummary.pdf'
+// Handle space in filename using %20
+const pdfTrainingUrl = '/RedcapUserTraining%20guide.pdf'
 
 async function loadRegistryConfig() {
   try {
