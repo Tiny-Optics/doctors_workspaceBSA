@@ -186,9 +186,18 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 
 	if resp.StatusCode != http.StatusOK {
 		errMsg := fmt.Sprintf("status %d: %s", resp.StatusCode, string(body))
-		fmt.Printf("DEBUG: Dropbox token refresh failed with status %d\n", resp.StatusCode)
-		fmt.Printf("DEBUG: Response body: %s\n", string(body))
-		fmt.Printf("DEBUG: Request form data: %s\n", formData.Encode())
+		fmt.Printf("ERROR: Dropbox token refresh failed with status %d\n", resp.StatusCode)
+		fmt.Printf("ERROR: Response body: %s\n", string(body))
+		fmt.Printf("DEBUG: Request form data (without secrets): grant_type=refresh_token&client_id=%s\n", s.cachedConfig.AppKey)
+		fmt.Printf("DEBUG: Refresh token length: %d\n", len(s.cachedConfig.RefreshToken))
+
+		// Check for specific error types
+		if strings.Contains(string(body), "invalid_grant") {
+			fmt.Printf("ERROR: Refresh token is invalid or expired. User may need to re-authorize the app.\n")
+		} else if strings.Contains(string(body), "expired") {
+			fmt.Printf("ERROR: Refresh token has expired. User needs to re-authorize the app.\n")
+		}
+
 		s.handleRefreshFailure(ctx, errors.New(errMsg))
 		return fmt.Errorf("%w: %s", ErrTokenRefreshFailed, errMsg)
 	}
