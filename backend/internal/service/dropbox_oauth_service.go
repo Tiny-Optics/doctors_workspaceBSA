@@ -58,10 +58,17 @@ func (s *DropboxOAuthService) GenerateAuthorizationURL(appKey, redirectURI strin
 	params.Add("response_type", "code")
 	params.Add("token_access_type", "offline") // Request refresh token
 
-	// Don't add redirect_uri at all - Dropbox will show code to copy manually
-	// This avoids redirect_uri mismatch issues between authorize and token exchange
+	// Include redirect_uri if provided
+	// If redirect_uri is provided, it must match exactly in token exchange
+	if redirectURI != "" {
+		params.Add("redirect_uri", redirectURI)
+		fmt.Printf("DEBUG: Authorization URL includes redirect_uri: %s\n", redirectURI)
+	} else {
+		fmt.Println("DEBUG: Authorization URL without redirect_uri - user will copy code manually")
+	}
 
 	authURL := fmt.Sprintf("https://www.dropbox.com/oauth2/authorize?%s", params.Encode())
+	fmt.Printf("DEBUG: Generated authorization URL (length: %d)\n", len(authURL))
 	return authURL, nil
 }
 
@@ -86,8 +93,17 @@ func (s *DropboxOAuthService) ExchangeCodeForTokens(
 	formData.Set("client_id", appKey)
 	formData.Set("client_secret", appSecret)
 
-	// Don't include redirect_uri in token exchange - matches the authorize step
-	// This avoids "invalid_grant" errors from redirect_uri mismatch
+	// Include redirect_uri if it was provided (must match authorization URL)
+	// According to Dropbox docs: if redirect_uri was used in authorization, it must be included here
+	if redirectURI != "" {
+		formData.Set("redirect_uri", redirectURI)
+		fmt.Printf("DEBUG: Including redirect_uri in token exchange: %s\n", redirectURI)
+	} else {
+		fmt.Println("DEBUG: No redirect_uri provided - using manual code flow")
+	}
+
+	fmt.Printf("DEBUG: Exchanging authorization code (length: %d)\n", len(code))
+	fmt.Printf("DEBUG: Request form data (without secrets): grant_type=authorization_code&client_id=%s&redirect_uri=%s\n", appKey, redirectURI)
 
 	// Call Dropbox token endpoint with form-urlencoded data
 	resp, err := http.Post(
@@ -96,17 +112,25 @@ func (s *DropboxOAuthService) ExchangeCodeForTokens(
 		bytes.NewBufferString(formData.Encode()),
 	)
 	if err != nil {
+		fmt.Printf("ERROR: Failed to call Dropbox token endpoint: %v\n", err)
 		return nil, fmt.Errorf("failed to call token endpoint: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Printf("ERROR: Failed to read Dropbox response body: %v\n", err)
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("token exchange failed (status %d): %s", resp.StatusCode, string(body))
+		errMsg := fmt.Sprintf("token exchange failed (status %d): %s", resp.StatusCode, string(body))
+		fmt.Printf("ERROR: Dropbox token exchange failed:\n")
+		fmt.Printf("  Status: %d\n", resp.StatusCode)
+		fmt.Printf("  Response: %s\n", string(body))
+		fmt.Printf("  Code length: %d\n", len(code))
+		fmt.Printf("  Redirect URI: %s\n", redirectURI)
+		return nil, errors.New(errMsg)
 	}
 
 	// Parse response

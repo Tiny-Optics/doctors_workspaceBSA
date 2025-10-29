@@ -87,3 +87,4 @@ backend/cmd/seed-users/
 backend/cmd/seed-30-users/
 backend/cmd/seed-institutions/
 backend/cmd/migrate-institutions/
+sshDetails.txt
