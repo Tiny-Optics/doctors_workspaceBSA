@@ -388,7 +388,7 @@ const authConfig = ref<{ appKey: string; appSecret: string; parentFolder: string
   appKey: '',
   appSecret: '',
   parentFolder: '',
-  redirectUri: ''
+  redirectUri: 'https://workspace.bloodsa.org.za'
 })
 const authorizationUrl = ref('')
 const authorizationCode = ref('')
@@ -451,6 +451,8 @@ async function handleInitiateAuth() {
     authConfig.value.redirectUri = redirectUri
     
     const response = await dropboxAdminService.initiateAuth(authConfig.value)
+    // Save entered values locally for convenience (not synced)
+    localStorage.setItem('dropboxAdminDefaults', JSON.stringify(authConfig.value))
     authorizationUrl.value = response.authUrl
     oauthStep.value = 2
     toast.success('Authorization URL generated. Please click the button to authorize Dropbox.')
@@ -551,6 +553,18 @@ function formatDate(dateString: string | undefined): string {
 
 // Lifecycle
 onMounted(() => {
+  // Load any saved admin defaults from localStorage (not persisted to repo)
+  try {
+    const saved = localStorage.getItem('dropboxAdminDefaults')
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      authConfig.value.appKey = parsed.appKey || authConfig.value.appKey
+      authConfig.value.appSecret = parsed.appSecret || authConfig.value.appSecret
+      authConfig.value.parentFolder = parsed.parentFolder || authConfig.value.parentFolder
+      authConfig.value.redirectUri = parsed.redirectUri || authConfig.value.redirectUri
+    }
+  } catch (_) {}
+
   loadStatus()
 })
 </script>
