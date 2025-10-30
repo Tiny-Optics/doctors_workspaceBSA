@@ -53,14 +53,19 @@ func (d *DropboxConfig) NeedsReconnection() bool {
 
 // GetPublicStatus returns a safe view of the config status (no tokens)
 func (d *DropboxConfig) GetPublicStatus() map[string]interface{} {
+	// Derive live status from token expiry in addition to stored flags
+	tokenExpired := d.IsTokenExpired()
+	isConnected := d.IsConnected && !tokenExpired
+	needsReconnection := d.NeedsReconnection() || tokenExpired
+
 	return map[string]interface{}{
-		"isConnected":         d.IsConnected,
+		"isConnected":         isConnected,
 		"tokenExpiry":         d.TokenExpiry,
 		"lastRefreshSuccess":  d.LastRefreshSuccess,
 		"lastRefreshAttempt":  d.LastRefreshAttempt,
 		"consecutiveFailures": d.ConsecutiveFailures,
 		"lastError":           d.LastError,
-		"needsReconnection":   d.NeedsReconnection(),
+		"needsReconnection":   needsReconnection,
 		"parentFolder":        d.ParentFolder,
 	}
 }

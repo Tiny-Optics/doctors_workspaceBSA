@@ -274,8 +274,12 @@ func (s *DropboxOAuthService) ForceRefresh(
 	performedBy *models.User,
 	ipAddress string,
 ) error {
+	// Apply a timeout to avoid proxy timeouts/hangs
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
 	// This will trigger a refresh through the dropbox service
-	if err := s.dropboxService.ensureValidToken(ctx); err != nil {
+	if err := s.dropboxService.ensureValidToken(ctxWithTimeout); err != nil {
 		return fmt.Errorf("failed to refresh token: %w", err)
 	}
 
@@ -297,14 +301,18 @@ func (s *DropboxOAuthService) TestConnection(
 	performedBy *models.User,
 	ipAddress string,
 ) error {
-	if err := s.dropboxService.TestConnection(ctx); err != nil {
+	// Apply a timeout to avoid proxy timeouts/hangs
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	if err := s.dropboxService.TestConnection(ctxWithTimeout); err != nil {
 		// Update health status
-		s.configRepo.UpdateHealth(ctx, false, err.Error())
+		s.configRepo.UpdateHealth(ctxWithTimeout, false, err.Error())
 		return fmt.Errorf("connection test failed: %w", err)
 	}
 
 	// Update health status
-	s.configRepo.UpdateHealth(ctx, true, "")
+	s.configRepo.UpdateHealth(ctxWithTimeout, true, "")
 
 	// Audit log
 	s.auditRepo.Create(ctx, &models.AuditLog{

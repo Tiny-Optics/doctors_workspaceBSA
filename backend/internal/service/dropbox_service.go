@@ -166,12 +166,15 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	formData.Set("client_id", s.cachedConfig.AppKey)
 	formData.Set("client_secret", decryptedAppSecret)
 
-	// Call Dropbox token endpoint with form-urlencoded data
-	resp, err := http.Post(
-		"https://api.dropbox.com/oauth2/token",
-		"application/x-www-form-urlencoded",
-		bytes.NewBufferString(formData.Encode()),
-	)
+	// Call Dropbox token endpoint with context-aware request
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.dropbox.com/oauth2/token", bytes.NewBufferString(formData.Encode()))
+	if err != nil {
+		s.handleRefreshFailure(ctx, err)
+		return fmt.Errorf("%w: failed to build refresh request: %v", ErrTokenRefreshFailed, err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("%w: %v", ErrTokenRefreshFailed, err)
