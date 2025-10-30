@@ -301,18 +301,18 @@ func (s *DropboxOAuthService) TestConnection(
 	performedBy *models.User,
 	ipAddress string,
 ) error {
-    // Apply a timeout to avoid proxy timeouts/hangs
-    ctxWithTimeout, cancel := context.WithTimeout(ctx, 20*time.Second)
-    defer cancel()
+	// Apply a timeout to avoid proxy timeouts/hangs
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
 
-    if err := s.dropboxService.TestConnection(ctxWithTimeout); err != nil {
+	if err := s.dropboxService.TestConnection(ctxWithTimeout); err != nil {
 		// Update health status
-        s.configRepo.UpdateHealth(ctxWithTimeout, false, err.Error())
+		s.configRepo.UpdateHealth(ctxWithTimeout, false, err.Error())
 		return fmt.Errorf("connection test failed: %w", err)
 	}
 
 	// Update health status
-    s.configRepo.UpdateHealth(ctxWithTimeout, true, "")
+	s.configRepo.UpdateHealth(ctxWithTimeout, true, "")
 
 	// Audit log
 	s.auditRepo.Create(ctx, &models.AuditLog{
