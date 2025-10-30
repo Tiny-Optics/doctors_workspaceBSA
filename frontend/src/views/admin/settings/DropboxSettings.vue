@@ -195,6 +195,19 @@
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">
+              Redirect URI (HTTPS)
+            </label>
+            <input
+              v-model="authConfig.redirectUri"
+              type="url"
+              placeholder="https://workspace.bloodsa.org.za"
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
+            />
+            <p class="mt-2 text-xs text-gray-500">Must exactly match the URI registered in Dropbox App Console.</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
               Dropbox App Secret <span class="text-red-500">*</span>
             </label>
             <input
@@ -371,10 +384,11 @@ const showDisconnectModal = ref(false)
 
 // OAuth flow
 const oauthStep = ref(1)
-const authConfig = ref({
+const authConfig = ref<{ appKey: string; appSecret: string; parentFolder: string; redirectUri?: string }>({
   appKey: '',
   appSecret: '',
-  parentFolder: ''
+  parentFolder: '',
+  redirectUri: ''
 })
 const authorizationUrl = ref('')
 const authorizationCode = ref('')
@@ -415,8 +429,26 @@ async function handleInitiateAuth() {
       parentFolder = parentFolder.replace(/\/+$/, '')
     }
     
-    // Update the config with normalized path
+    // Normalize redirect URI if provided
+    let redirectUri = (authConfig.value.redirectUri || '').trim()
+    if (redirectUri) {
+      try {
+        const u = new URL(redirectUri)
+        // Force https scheme
+        if (u.protocol !== 'https:') {
+          throw new Error('Redirect URI must use https scheme')
+        }
+        // Remove trailing slash for consistency
+        u.pathname = u.pathname.replace(/\/$/, '')
+        redirectUri = u.toString()
+      } catch (e: any) {
+        throw new Error(e?.message || 'Invalid redirect URI')
+      }
+    }
+
+    // Update the config with normalized values
     authConfig.value.parentFolder = parentFolder
+    authConfig.value.redirectUri = redirectUri
     
     const response = await dropboxAdminService.initiateAuth(authConfig.value)
     authorizationUrl.value = response.authUrl
@@ -443,7 +475,7 @@ async function handleCompleteAuth() {
     
     // Reset form and reload status
     oauthStep.value = 1
-    authConfig.value = { appKey: '', appSecret: '', parentFolder: '' }
+    authConfig.value = { appKey: '', appSecret: '', parentFolder: '', redirectUri: '' }
     authorizationCode.value = ''
     authorizationUrl.value = ''
     
