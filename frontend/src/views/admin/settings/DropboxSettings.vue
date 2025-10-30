@@ -200,7 +200,7 @@
             <input
               v-model="authConfig.redirectUri"
               type="url"
-              placeholder="https://workspace.bloodsa.org.za"
+              placeholder="https://workspace.bloodsa.org.za/admin/settings/"
               class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
             />
             <p class="mt-2 text-xs text-gray-500">Must exactly match the URI registered in Dropbox App Console.</p>
@@ -273,7 +273,6 @@
             <h4 class="text-sm font-medium text-green-800 mb-2">Step 1: Authorize in Dropbox</h4>
             <a 
               :href="authorizationUrl" 
-              target="_blank"
               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
             >
               Open Dropbox Authorization
@@ -388,7 +387,7 @@ const authConfig = ref<{ appKey: string; appSecret: string; parentFolder: string
   appKey: '',
   appSecret: '',
   parentFolder: '',
-  redirectUri: 'https://workspace.bloodsa.org.za'
+  redirectUri: ''
 })
 const authorizationUrl = ref('')
 const authorizationCode = ref('')
@@ -437,6 +436,10 @@ async function handleInitiateAuth() {
         // Force https scheme
         if (u.protocol !== 'https:') {
           throw new Error('Redirect URI must use https scheme')
+        }
+        // Default path to /admin/settings when origin-only is provided
+        if (!u.pathname || u.pathname === '/') {
+          u.pathname = '/admin/settings'
         }
         // Remove trailing slash for consistency
         u.pathname = u.pathname.replace(/\/$/, '')
@@ -552,7 +555,7 @@ function formatDate(dateString: string | undefined): string {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   // Load any saved admin defaults from localStorage (not persisted to repo)
   try {
     const saved = localStorage.getItem('dropboxAdminDefaults')
@@ -562,6 +565,32 @@ onMounted(() => {
       authConfig.value.appSecret = parsed.appSecret || authConfig.value.appSecret
       authConfig.value.parentFolder = parsed.parentFolder || authConfig.value.parentFolder
       authConfig.value.redirectUri = parsed.redirectUri || authConfig.value.redirectUri
+    }
+  } catch (_) {}
+
+  // If no redirect URI stored, default to current origin + /admin/settings
+  if (!authConfig.value.redirectUri) {
+    authConfig.value.redirectUri = `${window.location.origin}/admin/settings`
+  }
+
+  // If user was redirected back from Dropbox with ?code=..., auto-complete the flow
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    const error = params.get('error')
+    if (error) {
+      toast.error(`Dropbox authorization error: ${error}`)
+      // Clean URL
+      history.replaceState(null, '', window.location.pathname)
+    } else if (code) {
+      authorizationCode.value = code
+      oauthStep.value = 2
+      // Clean URL before continuing
+      history.replaceState(null, '', window.location.pathname)
+      // Auto-complete authorization if we have stored app creds
+      if (authConfig.value.appKey && authConfig.value.appSecret) {
+        await handleCompleteAuth()
+      }
     }
   } catch (_) {}
 
