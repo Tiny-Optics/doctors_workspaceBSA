@@ -52,6 +52,9 @@ type DropboxService struct {
 	// Configuration
 	isConfigured   bool
 	alertThreshold int // Number of consecutive failures before alerting
+
+    // Single-flight guard so only one refresh runs at a time
+    refreshMutex sync.Mutex
 }
 
 // NewDropboxService creates a new DropboxService with DB-backed configuration
@@ -129,8 +132,8 @@ func (s *DropboxService) ensureValidToken(ctx context.Context) error {
 	needsRefresh := s.cachedConfig.IsTokenExpired()
 	s.cacheMutex.RUnlock()
 
-	if needsRefresh {
-		return s.refreshAccessToken(ctx)
+    if needsRefresh {
+        return s.refreshAccessTokenSingleflight(ctx)
 	}
 
 	return nil
@@ -166,15 +169,16 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	formData.Set("client_id", s.cachedConfig.AppKey)
 	formData.Set("client_secret", decryptedAppSecret)
 
-	// Call Dropbox token endpoint with context-aware request
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.dropbox.com/oauth2/token", bytes.NewBufferString(formData.Encode()))
+    // Call Dropbox token endpoint with context-aware request and timeout
+    httpClient := &http.Client{Timeout: 20 * time.Second}
+    req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.dropbox.com/oauth2/token", bytes.NewBufferString(formData.Encode()))
 	if err != nil {
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("%w: failed to build refresh request: %v", ErrTokenRefreshFailed, err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := http.DefaultClient.Do(req)
+    resp, err := httpClient.Do(req)
 	if err != nil {
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("%w: %v", ErrTokenRefreshFailed, err)
@@ -195,10 +199,13 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 		fmt.Printf("DEBUG: Refresh token length: %d\n", len(s.cachedConfig.RefreshToken))
 
 		// Check for specific error types
-		if strings.Contains(string(body), "invalid_grant") {
+        if strings.Contains(string(body), "invalid_grant") {
 			fmt.Printf("ERROR: Refresh token is invalid or expired. User may need to re-authorize the app.\n")
+            // Mark needs reconnection explicitly for UI
+            _ = s.configRepo.UpdateHealth(ctx, false, "invalid_grant during refresh - re-authorization required")
 		} else if strings.Contains(string(body), "expired") {
 			fmt.Printf("ERROR: Refresh token has expired. User needs to re-authorize the app.\n")
+            _ = s.configRepo.UpdateHealth(ctx, false, "refresh token expired - re-authorization required")
 		}
 
 		s.handleRefreshFailure(ctx, errors.New(errMsg))
@@ -255,6 +262,57 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	return nil
 }
 
+// refreshAccessTokenSingleflight ensures only one refresh runs at a time
+func (s *DropboxService) refreshAccessTokenSingleflight(ctx context.Context) error {
+    s.refreshMutex.Lock()
+    defer s.refreshMutex.Unlock()
+    return s.refreshAccessToken(ctx)
+}
+
+// withClientRetry executes an operation with the Dropbox client and, on
+// authentication failure, refreshes the token once and retries the operation.
+func (s *DropboxService) withClientRetry(ctx context.Context, op func(files.Client, string) error) error {
+    if err := s.ensureValidToken(ctx); err != nil {
+        return err
+    }
+
+    s.cacheMutex.RLock()
+    client := s.cachedClient
+    parentFolder := s.cachedConfig.ParentFolder
+    s.cacheMutex.RUnlock()
+
+    err := op(client, parentFolder)
+    if err == nil {
+        return nil
+    }
+
+    // Detect auth-related errors that require refresh
+    if isAuthError(err) {
+        if rErr := s.refreshAccessTokenSingleflight(ctx); rErr != nil {
+            return err
+        }
+        s.cacheMutex.RLock()
+        client = s.cachedClient
+        parentFolder = s.cachedConfig.ParentFolder
+        s.cacheMutex.RUnlock()
+        return op(client, parentFolder)
+    }
+
+    return err
+}
+
+func isAuthError(err error) bool {
+    if err == nil {
+        return false
+    }
+    msg := strings.ToLower(err.Error())
+    // Dropbox SDK surfaces these tokens in error strings
+    return strings.Contains(msg, "invalid_access_token") ||
+        strings.Contains(msg, "expired_access_token") ||
+        strings.Contains(msg, "invalid grant") ||
+        strings.Contains(msg, "401")
+}
+
 // handleRefreshFailure handles token refresh failures
 func (s *DropboxService) handleRefreshFailure(ctx context.Context, err error) {
 	fmt.Printf("ERROR: Dropbox token refresh failed: %v\n", err)
@@ -286,191 +344,137 @@ func (s *DropboxService) sendAlert(err error) {
 
 // CreateFolder creates a folder in Dropbox
 func (s *DropboxService) CreateFolder(relativePath string) error {
-	ctx := context.Background()
-	if err := s.ensureValidToken(ctx); err != nil {
-		return err
-	}
-
-	s.cacheMutex.RLock()
-	client := s.cachedClient
-	parentFolder := s.cachedConfig.ParentFolder
-	s.cacheMutex.RUnlock()
-
-	fullPath := s.getFullPath(relativePath, parentFolder)
-
-	// Check if folder already exists
-	_, err := client.GetMetadata(files.NewGetMetadataArg(fullPath))
-	if err == nil {
-		// Folder already exists
-		return nil
-	}
-
-	// Create the folder
-	createArg := files.NewCreateFolderArg(fullPath)
-	_, err = client.CreateFolderV2(createArg)
-	if err != nil {
-		// Check if error is because folder already exists
-		if strings.Contains(err.Error(), "path/conflict/folder") {
-			return nil
-		}
-		return fmt.Errorf("%w: %v", ErrFolderCreationFailed, err)
-	}
-
-	return nil
+    ctx := context.Background()
+    return s.withClientRetry(ctx, func(client files.Client, parentFolder string) error {
+        fullPath := s.getFullPath(relativePath, parentFolder)
+        // Check if folder already exists
+        _, err := client.GetMetadata(files.NewGetMetadataArg(fullPath))
+        if err == nil {
+            return nil
+        }
+        // Create the folder
+        createArg := files.NewCreateFolderArg(fullPath)
+        _, err = client.CreateFolderV2(createArg)
+        if err != nil {
+            if strings.Contains(err.Error(), "path/conflict/folder") {
+                return nil
+            }
+            return fmt.Errorf("%w: %v", ErrFolderCreationFailed, err)
+        }
+        return nil
+    })
 }
 
 // UploadFile uploads a file to Dropbox
 func (s *DropboxService) UploadFile(ctx context.Context, file io.Reader, remotePath string) error {
-	if err := s.ensureValidToken(ctx); err != nil {
-		return err
-	}
-
-	s.cacheMutex.RLock()
-	client := s.cachedClient
-	parentFolder := s.cachedConfig.ParentFolder
-	s.cacheMutex.RUnlock()
-
-	fullPath := s.getFullPath(remotePath, parentFolder)
-
-	// Create upload argument
-	uploadArg := files.NewUploadArg(fullPath)
-	uploadArg.Mode = &files.WriteMode{Tagged: dropbox.Tagged{Tag: "overwrite"}}
-
-	// Upload the file
-	_, err := client.Upload(uploadArg, file)
-	if err != nil {
-		return fmt.Errorf("failed to upload file to Dropbox: %w", err)
-	}
-
-	return nil
+    return s.withClientRetry(ctx, func(client files.Client, parentFolder string) error {
+        fullPath := s.getFullPath(remotePath, parentFolder)
+        uploadArg := files.NewUploadArg(fullPath)
+        uploadArg.Mode = &files.WriteMode{Tagged: dropbox.Tagged{Tag: "overwrite"}}
+        _, err := client.Upload(uploadArg, file)
+        if err != nil {
+            return fmt.Errorf("failed to upload file to Dropbox: %w", err)
+        }
+        return nil
+    })
 }
 
 // ListFiles lists all files in a Dropbox folder
 func (s *DropboxService) ListFiles(relativePath string) ([]DropboxFileInfo, error) {
-	ctx := context.Background()
-	if err := s.ensureValidToken(ctx); err != nil {
-		return nil, err
-	}
-
-	s.cacheMutex.RLock()
-	client := s.cachedClient
-	parentFolder := s.cachedConfig.ParentFolder
-	s.cacheMutex.RUnlock()
-
-	fullPath := s.getFullPath(relativePath, parentFolder)
-
-	listArg := files.NewListFolderArg(fullPath)
-	result, err := client.ListFolder(listArg)
-	if err != nil {
-		if strings.Contains(err.Error(), "path/not_found") {
-			return nil, ErrFolderNotFound
-		}
-		return nil, fmt.Errorf("failed to list folder: %w", err)
-	}
-
-	var fileInfos []DropboxFileInfo
-
-	// Process initial batch
-	for _, entry := range result.Entries {
-		fileInfo := s.entryToFileInfo(entry)
-		if fileInfo != nil {
-			fileInfos = append(fileInfos, *fileInfo)
-		}
-	}
-
-	// Handle pagination if there are more results
-	for result.HasMore {
-		continueArg := files.NewListFolderContinueArg(result.Cursor)
-		result, err = client.ListFolderContinue(continueArg)
-		if err != nil {
-			return fileInfos, fmt.Errorf("failed to continue listing folder: %w", err)
-		}
-
-		for _, entry := range result.Entries {
-			fileInfo := s.entryToFileInfo(entry)
-			if fileInfo != nil {
-				fileInfos = append(fileInfos, *fileInfo)
-			}
-		}
-	}
-
-	return fileInfos, nil
+    ctx := context.Background()
+    var out []DropboxFileInfo
+    err := s.withClientRetry(ctx, func(client files.Client, parentFolder string) error {
+        fullPath := s.getFullPath(relativePath, parentFolder)
+        listArg := files.NewListFolderArg(fullPath)
+        result, err := client.ListFolder(listArg)
+        if err != nil {
+            if strings.Contains(err.Error(), "path/not_found") {
+                return ErrFolderNotFound
+            }
+            return fmt.Errorf("failed to list folder: %w", err)
+        }
+        var fileInfos []DropboxFileInfo
+        for _, entry := range result.Entries {
+            fileInfo := s.entryToFileInfo(entry)
+            if fileInfo != nil {
+                fileInfos = append(fileInfos, *fileInfo)
+            }
+        }
+        for result.HasMore {
+            continueArg := files.NewListFolderContinueArg(result.Cursor)
+            result, err = client.ListFolderContinue(continueArg)
+            if err != nil {
+                return fmt.Errorf("failed to continue listing folder: %w", err)
+            }
+            for _, entry := range result.Entries {
+                fileInfo := s.entryToFileInfo(entry)
+                if fileInfo != nil {
+                    fileInfos = append(fileInfos, *fileInfo)
+                }
+            }
+        }
+        out = fileInfos
+        return nil
+    })
+    return out, err
 }
 
 // ListFilesRecursive lists all files and folders recursively, building a tree structure
 func (s *DropboxService) ListFilesRecursive(relativePath string) ([]DropboxFileInfo, error) {
-	ctx := context.Background()
-	if err := s.ensureValidToken(ctx); err != nil {
-		return nil, err
-	}
-
-	s.cacheMutex.RLock()
-	client := s.cachedClient
-	parentFolder := s.cachedConfig.ParentFolder
-	s.cacheMutex.RUnlock()
-
-	fullPath := s.getFullPath(relativePath, parentFolder)
-
-	// Get initial folder contents
-	listArg := files.NewListFolderArg(fullPath)
-	result, err := client.ListFolder(listArg)
-	if err != nil {
-		if strings.Contains(err.Error(), "path/not_found") {
-			return nil, ErrFolderNotFound
-		}
-		return nil, fmt.Errorf("failed to list folder: %w", err)
-	}
-
-	var fileInfos []DropboxFileInfo
-
-	// Process initial batch
-	for _, entry := range result.Entries {
-		fileInfo := s.entryToFileInfo(entry)
-		if fileInfo != nil {
-			// If it's a folder, recursively get its contents
-			if fileInfo.IsFolder {
-				children, err := s.listFolderRecursive(client, fileInfo.Path, parentFolder)
-				if err != nil {
-					// If we can't access the folder, skip it but continue
-					fmt.Printf("Warning: Could not access folder %s: %v\n", fileInfo.Path, err)
-					fileInfo.Children = []DropboxFileInfo{}
-				} else {
-					fileInfo.Children = children
-				}
-			}
-			fileInfos = append(fileInfos, *fileInfo)
-		}
-	}
-
-	// Handle pagination if there are more results
-	for result.HasMore {
-		continueArg := files.NewListFolderContinueArg(result.Cursor)
-		result, err = client.ListFolderContinue(continueArg)
-		if err != nil {
-			return fileInfos, fmt.Errorf("failed to continue listing folder: %w", err)
-		}
-
-		for _, entry := range result.Entries {
-			fileInfo := s.entryToFileInfo(entry)
-			if fileInfo != nil {
-				// If it's a folder, recursively get its contents
-				if fileInfo.IsFolder {
-					children, err := s.listFolderRecursive(client, fileInfo.Path, parentFolder)
-					if err != nil {
-						// If we can't access the folder, skip it but continue
-						fmt.Printf("Warning: Could not access folder %s: %v\n", fileInfo.Path, err)
-						fileInfo.Children = []DropboxFileInfo{}
-					} else {
-						fileInfo.Children = children
-					}
-				}
-				fileInfos = append(fileInfos, *fileInfo)
-			}
-		}
-	}
-
-	// Filter out empty folders (folders with no files)
-	return s.filterEmptyFolders(fileInfos), nil
+    ctx := context.Background()
+    var out []DropboxFileInfo
+    err := s.withClientRetry(ctx, func(client files.Client, parentFolder string) error {
+        fullPath := s.getFullPath(relativePath, parentFolder)
+        listArg := files.NewListFolderArg(fullPath)
+        result, err := client.ListFolder(listArg)
+        if err != nil {
+            if strings.Contains(err.Error(), "path/not_found") {
+                return ErrFolderNotFound
+            }
+            return fmt.Errorf("failed to list folder: %w", err)
+        }
+        var fileInfos []DropboxFileInfo
+        for _, entry := range result.Entries {
+            fileInfo := s.entryToFileInfo(entry)
+            if fileInfo != nil {
+                if fileInfo.IsFolder {
+                    children, err := s.listFolderRecursive(client, fileInfo.Path, parentFolder)
+                    if err != nil {
+                        fmt.Printf("Warning: Could not access folder %s: %v\n", fileInfo.Path, err)
+                        fileInfo.Children = []DropboxFileInfo{}
+                    } else {
+                        fileInfo.Children = children
+                    }
+                }
+                fileInfos = append(fileInfos, *fileInfo)
+            }
+        }
+        for result.HasMore {
+            continueArg := files.NewListFolderContinueArg(result.Cursor)
+            result, err = client.ListFolderContinue(continueArg)
+            if err != nil {
+                return fmt.Errorf("failed to continue listing folder: %w", err)
+            }
+            for _, entry := range result.Entries {
+                fileInfo := s.entryToFileInfo(entry)
+                if fileInfo != nil {
+                    if fileInfo.IsFolder {
+                        children, err := s.listFolderRecursive(client, fileInfo.Path, parentFolder)
+                        if err != nil {
+                            fmt.Printf("Warning: Could not access folder %s: %v\n", fileInfo.Path, err)
+                            fileInfo.Children = []DropboxFileInfo{}
+                        } else {
+                            fileInfo.Children = children
+                        }
+                    }
+                    fileInfos = append(fileInfos, *fileInfo)
+                }
+            }
+        }
+        out = s.filterEmptyFolders(fileInfos)
+        return nil
+    })
+    return out, err
 }
 
 // listFolderRecursive is a helper method to recursively list folder contents
@@ -579,115 +583,80 @@ func (s *DropboxService) folderHasFiles(children []DropboxFileInfo) bool {
 
 // GetFileDownloadLink generates a temporary download link for a file
 func (s *DropboxService) GetFileDownloadLink(relativePath string) (string, error) {
-	ctx := context.Background()
-	if err := s.ensureValidToken(ctx); err != nil {
-		return "", err
-	}
-
-	s.cacheMutex.RLock()
-	client := s.cachedClient
-	parentFolder := s.cachedConfig.ParentFolder
-	s.cacheMutex.RUnlock()
-
-	fullPath := s.getFullPath(relativePath, parentFolder)
-
-	// Create a temporary link (valid for 4 hours)
-	arg := files.NewGetTemporaryLinkArg(fullPath)
-	result, err := client.GetTemporaryLink(arg)
-	if err != nil {
-		if strings.Contains(err.Error(), "path/not_found") {
-			return "", ErrFileNotFound
-		}
-		return "", fmt.Errorf("failed to get download link: %w", err)
-	}
-
-	return result.Link, nil
+    ctx := context.Background()
+    var link string
+    err := s.withClientRetry(ctx, func(client files.Client, parentFolder string) error {
+        fullPath := s.getFullPath(relativePath, parentFolder)
+        arg := files.NewGetTemporaryLinkArg(fullPath)
+        result, err := client.GetTemporaryLink(arg)
+        if err != nil {
+            if strings.Contains(err.Error(), "path/not_found") {
+                return ErrFileNotFound
+            }
+            return fmt.Errorf("failed to get download link: %w", err)
+        }
+        link = result.Link
+        return nil
+    })
+    return link, err
 }
 
 // GetFileMetadata retrieves metadata for a specific file
 func (s *DropboxService) GetFileMetadata(relativePath string) (*DropboxFileInfo, error) {
-	ctx := context.Background()
-	if err := s.ensureValidToken(ctx); err != nil {
-		return nil, err
-	}
-
-	s.cacheMutex.RLock()
-	client := s.cachedClient
-	parentFolder := s.cachedConfig.ParentFolder
-	s.cacheMutex.RUnlock()
-
-	fullPath := s.getFullPath(relativePath, parentFolder)
-
-	metadataArg := files.NewGetMetadataArg(fullPath)
-	metadata, err := client.GetMetadata(metadataArg)
-	if err != nil {
-		if strings.Contains(err.Error(), "path/not_found") {
-			return nil, ErrFileNotFound
-		}
-		return nil, fmt.Errorf("failed to get file metadata: %w", err)
-	}
-
-	fileInfo := s.metadataToFileInfo(metadata)
-	return fileInfo, nil
+    ctx := context.Background()
+    var info *DropboxFileInfo
+    err := s.withClientRetry(ctx, func(client files.Client, parentFolder string) error {
+        fullPath := s.getFullPath(relativePath, parentFolder)
+        metadataArg := files.NewGetMetadataArg(fullPath)
+        metadata, err := client.GetMetadata(metadataArg)
+        if err != nil {
+            if strings.Contains(err.Error(), "path/not_found") {
+                return ErrFileNotFound
+            }
+            return fmt.Errorf("failed to get file metadata: %w", err)
+        }
+        info = s.metadataToFileInfo(metadata)
+        return nil
+    })
+    return info, err
 }
 
 // RenameFolder renames a folder in Dropbox
 func (s *DropboxService) RenameFolder(oldRelativePath, newRelativePath string) error {
-	ctx := context.Background()
-	if err := s.ensureValidToken(ctx); err != nil {
-		return err
-	}
-
-	s.cacheMutex.RLock()
-	client := s.cachedClient
-	parentFolder := s.cachedConfig.ParentFolder
-	s.cacheMutex.RUnlock()
-
-	oldFullPath := s.getFullPath(oldRelativePath, parentFolder)
-	newFullPath := s.getFullPath(newRelativePath, parentFolder)
-
-	fmt.Printf("Dropbox RenameFolder - Parent: '%s', Old relative: '%s', New relative: '%s'\n", parentFolder, oldRelativePath, newRelativePath)
-	fmt.Printf("Dropbox RenameFolder - Old full path: '%s', New full path: '%s'\n", oldFullPath, newFullPath)
-
-	moveArg := files.NewRelocationArg(oldFullPath, newFullPath)
-	_, err := client.MoveV2(moveArg)
-	if err != nil {
-		fmt.Printf("Dropbox RenameFolder ERROR: %v\n", err)
-		if strings.Contains(err.Error(), "from_lookup/not_found") {
-			return fmt.Errorf("%w: folder '%s' not found in Dropbox", ErrFolderNotFound, oldFullPath)
-		}
-		return fmt.Errorf("failed to rename folder from '%s' to '%s': %w", oldFullPath, newFullPath, err)
-	}
-
-	fmt.Printf("Dropbox RenameFolder SUCCESS: '%s' → '%s'\n", oldFullPath, newFullPath)
-	return nil
+    ctx := context.Background()
+    return s.withClientRetry(ctx, func(client files.Client, parentFolder string) error {
+        oldFullPath := s.getFullPath(oldRelativePath, parentFolder)
+        newFullPath := s.getFullPath(newRelativePath, parentFolder)
+        fmt.Printf("Dropbox RenameFolder - Parent: '%s', Old relative: '%s', New relative: '%s'\n", parentFolder, oldRelativePath, newRelativePath)
+        fmt.Printf("Dropbox RenameFolder - Old full path: '%s', New full path: '%s'\n", oldFullPath, newFullPath)
+        moveArg := files.NewRelocationArg(oldFullPath, newFullPath)
+        _, err := client.MoveV2(moveArg)
+        if err != nil {
+            fmt.Printf("Dropbox RenameFolder ERROR: %v\n", err)
+            if strings.Contains(err.Error(), "from_lookup/not_found") {
+                return fmt.Errorf("%w: folder '%s' not found in Dropbox", ErrFolderNotFound, oldFullPath)
+            }
+            return fmt.Errorf("failed to rename folder from '%s' to '%s': %w", oldFullPath, newFullPath, err)
+        }
+        fmt.Printf("Dropbox RenameFolder SUCCESS: '%s' → '%s'\n", oldFullPath, newFullPath)
+        return nil
+    })
 }
 
 // TestConnection tests the Dropbox connection
 func (s *DropboxService) TestConnection(ctx context.Context) error {
-	if err := s.ensureValidToken(ctx); err != nil {
-		return err
-	}
-
-	s.cacheMutex.RLock()
-	client := s.cachedClient
-	parentFolder := s.cachedConfig.ParentFolder
-	s.cacheMutex.RUnlock()
-
-	// Normalize parent folder (empty = root)
-	testPath := parentFolder
-	if testPath == "" {
-		testPath = "" // Dropbox API uses empty string for root
-	}
-
-	// Try to list the parent folder
-	listArg := files.NewListFolderArg(testPath)
-	_, err := client.ListFolder(listArg)
-	if err != nil {
-		return fmt.Errorf("dropbox connection test failed: %w", err)
-	}
-
-	return nil
+    return s.withClientRetry(ctx, func(client files.Client, parentFolder string) error {
+        testPath := parentFolder
+        if testPath == "" {
+            testPath = ""
+        }
+        listArg := files.NewListFolderArg(testPath)
+        _, err := client.ListFolder(listArg)
+        if err != nil {
+            return fmt.Errorf("dropbox connection test failed: %w", err)
+        }
+        return nil
+    })
 }
 
 // Helper methods
