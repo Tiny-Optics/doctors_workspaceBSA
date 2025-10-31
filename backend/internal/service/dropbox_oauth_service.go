@@ -268,7 +268,8 @@ func (s *DropboxOAuthService) GetStatus(ctx context.Context) (map[string]interfa
 	// Perform a quick live check to avoid stale "Connected" when calls fail
 	// Use a short timeout to keep endpoint responsive
 	if s.dropboxService != nil {
-		ctxCheck, cancel := context.WithTimeout(ctx, 5*time.Second)
+		// Keep this very short to avoid UI timeouts if Dropbox is slow/unreachable
+		ctxCheck, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 		if err := s.dropboxService.TestConnection(ctxCheck); err != nil {
 			status["isConnected"] = false
