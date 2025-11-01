@@ -80,13 +80,34 @@ func (s *DropboxRefreshService) refreshIfNeeded() {
 	}
 
 	ctx := context.Background()
-	fmt.Println("Performing background Dropbox token refresh...")
+	// Log current expiry state before attempting
+	s.dropboxService.cacheMutex.RLock()
+	beforeExpiry := s.dropboxService.cachedConfig.TokenExpiry
+	expiredBefore := s.dropboxService.cachedConfig.IsTokenExpired()
+	s.dropboxService.cacheMutex.RUnlock()
+	fmt.Printf("Performing background Dropbox token refresh... (expiredBefore=%t, expiry=%s)\n", expiredBefore, beforeExpiry.Format(time.RFC3339))
 
 	if err := s.dropboxService.ensureValidToken(ctx); err != nil {
 		fmt.Printf("Background token refresh failed: %v\n", err)
-	} else {
-		fmt.Println("Background token refresh successful")
+		return
 	}
+
+	// After ensureValidToken, log new expiry and verify quick connectivity
+	s.dropboxService.cacheMutex.RLock()
+	afterExpiry := s.dropboxService.cachedConfig.TokenExpiry
+	expiredAfter := s.dropboxService.cachedConfig.IsTokenExpired()
+	s.dropboxService.cacheMutex.RUnlock()
+	fmt.Printf("Background refresh completed (expiredAfter=%t, newExpiry=%s)\n", expiredAfter, afterExpiry.Format(time.RFC3339))
+
+	verifyCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	if err := s.dropboxService.quickLiveCheck(verifyCtx); err != nil {
+		fmt.Printf("Background refresh live check FAILED: %v\n", err)
+		_ = s.dropboxService.configRepo.UpdateHealth(ctx, false, "background live check failed: "+err.Error())
+		return
+	}
+
+	fmt.Println("Background token refresh verified successfully")
 }
 
 // ForceRefreshNow manually triggers a refresh (useful for testing)
