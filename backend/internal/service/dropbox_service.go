@@ -81,6 +81,8 @@ func NewDropboxService(configRepo *repository.DropboxConfigRepository, encryptio
 
 // IsConfigured returns whether Dropbox is properly configured
 func (s *DropboxService) IsConfigured() bool {
+	s.cacheMutex.RLock()
+	defer s.cacheMutex.RUnlock()
 	return s.isConfigured
 }
 
@@ -281,22 +283,28 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 		fmt.Printf("Warning: Failed to reset failure count: %v\n", err)
 	}
 
-	// Reload configuration from database to ensure cached config is in sync
-	// This is critical to prevent refresh token issues after 24+ hours
-	fmt.Println("DEBUG: Reloading config from database...")
-	if err := s.loadConfigFromDB(ctx); err != nil {
-		fmt.Printf("Warning: Failed to reload config after refresh: %v\n", err)
-		// Don't return error here as the refresh was successful
-		// The cached config will be updated on next operation
-	} else {
-		fmt.Printf("Successfully reloaded Dropbox config; new expiry: %s (now: %s)\n", s.cachedConfig.TokenExpiry.Format(time.RFC3339), time.Now().Format(time.RFC3339))
-	}
+	// Note: We don't reload from DB here because:
+	// 1. We already have the fresh token and updated the cache
+	// 2. Reloading would require acquiring cacheMutex which can cause deadlocks
+	// 3. The cached config is already up-to-date with the new token and expiry
+	fmt.Printf("DEBUG: Refresh complete - new expiry: %s (now: %s)\n", s.cachedConfig.TokenExpiry.Format(time.RFC3339), time.Now().Format(time.RFC3339))
 
 	// Immediately verify the refreshed token with a lightweight live check
+	// Note: We use the client directly since we already hold cacheMutex write lock
 	fmt.Println("DEBUG: Verifying refreshed token with live check...")
 	verifyCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
-	if err := s.quickLiveCheck(verifyCtx); err != nil {
+
+	// Use client directly since we hold the write lock - don't try to lock again
+	// Note: Dropbox SDK doesn't accept context, but we've set a timeout above
+	// Empty path means Dropbox root folder
+	testPath := s.cachedConfig.ParentFolder
+	listArg := files.NewListFolderArg(testPath)
+	if _, err := s.cachedClient.ListFolder(listArg); err != nil {
+		// Check if context timed out
+		if verifyCtx.Err() != nil {
+			return fmt.Errorf("%w: post-refresh live check timed out", ErrTokenRefreshFailed)
+		}
 		fmt.Printf("ERROR: Post-refresh live check failed: %v\n", err)
 		// Mark health degraded so status reflects reality
 		_ = s.configRepo.UpdateHealth(ctx, false, "post-refresh live check failed: "+err.Error())
@@ -693,10 +701,8 @@ func (s *DropboxService) RenameFolder(oldRelativePath, newRelativePath string) e
 // TestConnection tests the Dropbox connection
 func (s *DropboxService) TestConnection(ctx context.Context) error {
 	return s.withClientRetry(ctx, func(client files.Client, parentFolder string) error {
+		// Empty path means Dropbox root folder
 		testPath := parentFolder
-		if testPath == "" {
-			testPath = ""
-		}
 		listArg := files.NewListFolderArg(testPath)
 		_, err := client.ListFolder(listArg)
 		if err != nil {
@@ -714,10 +720,8 @@ func (s *DropboxService) quickLiveCheck(ctx context.Context) error {
 	parentFolder := s.cachedConfig.ParentFolder
 	s.cacheMutex.RUnlock()
 
+	// Empty path means Dropbox root folder
 	testPath := parentFolder
-	if testPath == "" {
-		testPath = ""
-	}
 	listArg := files.NewListFolderArg(testPath)
 	_, err := client.ListFolder(listArg)
 	if err != nil {
