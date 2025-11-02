@@ -105,17 +105,48 @@ func (s *DropboxOAuthService) ExchangeCodeForTokens(
 	fmt.Printf("DEBUG: Exchanging authorization code (length: %d)\n", len(code))
 	fmt.Printf("DEBUG: Request form data (without secrets): grant_type=authorization_code&client_id=%s&redirect_uri=%s\n", appKey, redirectURI)
 
-	// Call Dropbox token endpoint with form-urlencoded data
-	resp, err := http.Post(
-		"https://api.dropbox.com/oauth2/token",
-		"application/x-www-form-urlencoded",
-		bytes.NewBufferString(formData.Encode()),
-	)
+	// Encode form data
+	formDataStr := formData.Encode()
+	fmt.Printf("DEBUG: Form data encoded (length: %d bytes)\n", len(formDataStr))
+
+	// Call Dropbox token endpoint with form-urlencoded data and timeout
+	fmt.Println("DEBUG: Creating HTTP request to Dropbox token endpoint...")
+
+	// Create context with timeout to ensure we don't hang
+	reqCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	httpClient := &http.Client{
+		Timeout: 20 * time.Second,
+		Transport: &http.Transport{
+			DisableKeepAlives: true, // Prevent connection pooling issues
+		},
+	}
+
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, "https://api.dropbox.com/oauth2/token", bytes.NewBufferString(formDataStr))
 	if err != nil {
-		fmt.Printf("ERROR: Failed to call Dropbox token endpoint: %v\n", err)
+		fmt.Printf("ERROR: Failed to create HTTP request: %v\n", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", "DoctorsWorkspace/1.0")
+
+	fmt.Println("DEBUG: Sending HTTP request to Dropbox...")
+	startTime := time.Now()
+	resp, err := httpClient.Do(req)
+	duration := time.Since(startTime)
+
+	if err != nil {
+		fmt.Printf("ERROR: Failed to call Dropbox token endpoint after %v: %v\n", duration, err)
+		fmt.Printf("ERROR: Error type: %T\n", err)
+		if urlErr, ok := err.(*url.Error); ok {
+			fmt.Printf("ERROR: URL error details - Op: %s, URL: %s, Err: %v, Timeout: %v\n",
+				urlErr.Op, urlErr.URL, urlErr.Err, urlErr.Timeout())
+		}
 		return nil, fmt.Errorf("failed to call token endpoint: %w", err)
 	}
 	defer resp.Body.Close()
+	fmt.Printf("DEBUG: Received response from Dropbox (status %d) after %v\n", resp.StatusCode, duration)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -276,7 +307,7 @@ func (s *DropboxOAuthService) GetStatus(ctx context.Context) (map[string]interfa
 		go func() {
 			done <- s.dropboxService.TestConnection(ctxCheck)
 		}()
-		
+
 		select {
 		case err := <-done:
 			if err != nil {
