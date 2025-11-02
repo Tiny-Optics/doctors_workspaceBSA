@@ -86,30 +86,42 @@ func (s *DropboxService) IsConfigured() bool {
 
 // loadConfigFromDB loads the Dropbox configuration from database and caches it
 func (s *DropboxService) loadConfigFromDB(ctx context.Context) error {
+	fmt.Println("DEBUG: loadConfigFromDB: Acquiring cache lock...")
 	s.cacheMutex.Lock()
 	defer s.cacheMutex.Unlock()
+	fmt.Println("DEBUG: loadConfigFromDB: Cache lock acquired")
 
+	fmt.Println("DEBUG: loadConfigFromDB: Fetching config from database...")
 	config, err := s.configRepo.GetConfig(ctx)
 	if err != nil {
+		fmt.Printf("ERROR: loadConfigFromDB: Failed to get config: %v\n", err)
 		return err
 	}
+	fmt.Println("DEBUG: loadConfigFromDB: Config fetched from database")
 
 	// Decrypt tokens
+	fmt.Println("DEBUG: loadConfigFromDB: Decrypting access token...")
 	decryptedAccessToken, err := s.encryptionService.Decrypt(config.AccessToken)
 	if err != nil {
+		fmt.Printf("ERROR: loadConfigFromDB: Failed to decrypt access token: %v\n", err)
 		return fmt.Errorf("failed to decrypt access token: %w", err)
 	}
+	fmt.Println("DEBUG: loadConfigFromDB: Access token decrypted")
 
+	fmt.Println("DEBUG: loadConfigFromDB: Decrypting refresh token...")
 	decryptedRefreshToken, err := s.encryptionService.Decrypt(config.RefreshToken)
 	if err != nil {
+		fmt.Printf("ERROR: loadConfigFromDB: Failed to decrypt refresh token: %v\n", err)
 		return fmt.Errorf("failed to decrypt refresh token: %w", err)
 	}
+	fmt.Println("DEBUG: loadConfigFromDB: Refresh token decrypted")
 
 	// Store decrypted versions in cached config
 	config.AccessToken = decryptedAccessToken
 	config.RefreshToken = decryptedRefreshToken
 
 	// Create Dropbox client with current access token
+	fmt.Println("DEBUG: loadConfigFromDB: Creating Dropbox client...")
 	dropboxConfig := dropbox.Config{
 		Token:    decryptedAccessToken,
 		LogLevel: dropbox.LogOff,
@@ -118,6 +130,7 @@ func (s *DropboxService) loadConfigFromDB(ctx context.Context) error {
 	s.cachedConfig = config
 	s.cachedClient = files.New(dropboxConfig)
 	s.isConfigured = true
+	fmt.Println("DEBUG: loadConfigFromDB: Config loaded and cached successfully")
 
 	return nil
 }
