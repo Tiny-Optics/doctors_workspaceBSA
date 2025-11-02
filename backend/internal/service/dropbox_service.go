@@ -153,6 +153,7 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	// Decrypt the app secret before using it
 	decryptedAppSecret, err := s.encryptionService.Decrypt(s.cachedConfig.AppSecret)
 	if err != nil {
+		fmt.Printf("ERROR: Failed to decrypt app secret: %v\n", err)
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("failed to decrypt app secret: %w", err)
 	}
@@ -169,27 +170,34 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	formData.Set("client_id", s.cachedConfig.AppKey)
 	formData.Set("client_secret", decryptedAppSecret)
 
+	fmt.Println("DEBUG: Calling Dropbox token endpoint...")
 	// Call Dropbox token endpoint with context-aware request and timeout
 	httpClient := &http.Client{Timeout: 20 * time.Second}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.dropbox.com/oauth2/token", bytes.NewBufferString(formData.Encode()))
 	if err != nil {
+		fmt.Printf("ERROR: Failed to build refresh request: %v\n", err)
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("%w: failed to build refresh request: %v", ErrTokenRefreshFailed, err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
+	fmt.Println("DEBUG: Sending HTTP request to Dropbox...")
 	resp, err := httpClient.Do(req)
 	if err != nil {
+		fmt.Printf("ERROR: HTTP request failed: %v\n", err)
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("%w: %v", ErrTokenRefreshFailed, err)
 	}
 	defer resp.Body.Close()
+	fmt.Printf("DEBUG: Received response from Dropbox (status %d)\n", resp.StatusCode)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Printf("ERROR: Failed to read response body: %v\n", err)
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("%w: failed to read response: %v", ErrTokenRefreshFailed, err)
 	}
+	fmt.Printf("DEBUG: Response body length: %d bytes\n", len(body))
 
 	if resp.StatusCode != http.StatusOK {
 		errMsg := fmt.Sprintf("status %d: %s", resp.StatusCode, string(body))
@@ -213,35 +221,47 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	}
 
 	// Parse response
+	fmt.Println("DEBUG: Parsing token response...")
 	var tokenResp models.DropboxOAuthResponse
 	if err := json.Unmarshal(body, &tokenResp); err != nil {
+		fmt.Printf("ERROR: Failed to parse token response: %v\n", err)
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("%w: failed to parse response: %v", ErrTokenRefreshFailed, err)
 	}
+	fmt.Printf("DEBUG: Token response parsed successfully (expires_in: %d)\n", tokenResp.ExpiresIn)
 
 	// Encrypt the new access token
+	fmt.Println("DEBUG: Encrypting new access token...")
 	encryptedAccessToken, err := s.encryptionService.Encrypt(tokenResp.AccessToken)
 	if err != nil {
+		fmt.Printf("ERROR: Failed to encrypt access token: %v\n", err)
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("failed to encrypt access token: %w", err)
 	}
+	fmt.Println("DEBUG: Access token encrypted successfully")
 
 	// Update database with new token (refresh token not included in response for refresh grant)
+	fmt.Println("DEBUG: Updating tokens in database...")
 	if err := s.configRepo.UpdateTokens(ctx, encryptedAccessToken, "", tokenResp.ExpiresIn); err != nil {
+		fmt.Printf("ERROR: Failed to update tokens in database: %v\n", err)
 		s.handleRefreshFailure(ctx, err)
 		return fmt.Errorf("failed to update tokens in database: %w", err)
 	}
+	fmt.Println("DEBUG: Tokens updated in database successfully")
 
 	// Update cached config
+	fmt.Println("DEBUG: Updating cached config...")
 	s.cachedConfig.AccessToken = tokenResp.AccessToken // Store decrypted in memory
 	s.cachedConfig.TokenExpiry = time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
 
 	// Create new Dropbox client with refreshed token
+	fmt.Println("DEBUG: Creating new Dropbox client...")
 	dropboxConfig := dropbox.Config{
 		Token:    tokenResp.AccessToken,
 		LogLevel: dropbox.LogOff,
 	}
 	s.cachedClient = files.New(dropboxConfig)
+	fmt.Println("DEBUG: Dropbox client created successfully")
 
 	// Reset failure count on success
 	if err := s.configRepo.ResetFailures(ctx); err != nil {
@@ -250,6 +270,7 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 
 	// Reload configuration from database to ensure cached config is in sync
 	// This is critical to prevent refresh token issues after 24+ hours
+	fmt.Println("DEBUG: Reloading config from database...")
 	if err := s.loadConfigFromDB(ctx); err != nil {
 		fmt.Printf("Warning: Failed to reload config after refresh: %v\n", err)
 		// Don't return error here as the refresh was successful
@@ -259,6 +280,7 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 	}
 
 	// Immediately verify the refreshed token with a lightweight live check
+	fmt.Println("DEBUG: Verifying refreshed token with live check...")
 	verifyCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 	if err := s.quickLiveCheck(verifyCtx); err != nil {
@@ -268,6 +290,7 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 		// Treat this as a refresh failure from caller's perspective
 		return fmt.Errorf("%w: post-refresh live check failed: %v", ErrTokenRefreshFailed, err)
 	}
+	fmt.Println("DEBUG: Live check verification passed")
 
 	fmt.Println("Successfully refreshed Dropbox access token and verified connectivity")
 	return nil
