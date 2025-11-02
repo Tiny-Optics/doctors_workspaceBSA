@@ -265,16 +265,30 @@ func (s *DropboxOAuthService) GetStatus(ctx context.Context) (map[string]interfa
 		status["backgroundRefreshAvailable"] = true
 	}
 
-	// Perform a quick live check to avoid stale "Connected" when calls fail
-	// Use a short timeout to keep endpoint responsive
-	if s.dropboxService != nil {
+	// Perform a quick live check ONLY if token appears valid
+	// Skip live check if token is expired to avoid triggering refresh in status endpoint
+	if s.dropboxService != nil && !config.IsTokenExpired() {
 		// Keep this very short to avoid UI timeouts if Dropbox is slow/unreachable
 		ctxCheck, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
-		if err := s.dropboxService.TestConnection(ctxCheck); err != nil {
-			status["isConnected"] = false
-			status["needsReconnection"] = true
-			status["lastError"] = err.Error()
+		// Use goroutine to make this truly non-blocking - if it times out, status still returns
+		done := make(chan error, 1)
+		go func() {
+			done <- s.dropboxService.TestConnection(ctxCheck)
+		}()
+		
+		select {
+		case err := <-done:
+			if err != nil {
+				status["isConnected"] = false
+				status["needsReconnection"] = true
+				if status["lastError"] == "" {
+					status["lastError"] = err.Error()
+				}
+			}
+		case <-ctxCheck.Done():
+			// Timeout - don't update status, just return what we have
+			// This ensures the endpoint always returns quickly even if Dropbox is slow
 		}
 	}
 
