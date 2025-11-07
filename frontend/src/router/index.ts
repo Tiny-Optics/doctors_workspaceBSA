@@ -183,8 +183,19 @@ const router = createRouter({
 })
 
 // Navigation guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+
+  // Check if token is expired (even if isAuthenticated might be true due to reactive updates)
+  if (authStore.token && authStore.checkTokenExpiration()) {
+    console.warn('Token expired during navigation, logging out...')
+    await authStore.logout()
+    // Redirect to login if trying to access protected route
+    if (to.meta.requiresAuth) {
+      next({ name: 'login' })
+      return
+    }
+  }
 
   // Check if route requires authentication
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
