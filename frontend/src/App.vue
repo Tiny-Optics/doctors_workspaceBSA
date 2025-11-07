@@ -2,6 +2,7 @@
 import Header from './components/Header.vue'
 import Footer from './components/Footer.vue'
 import ToastNotification from './components/ToastNotification.vue'
+import CookieConsent from './components/CookieConsent.vue'
 </script>
 
 <template>
@@ -14,6 +15,9 @@ import ToastNotification from './components/ToastNotification.vue'
     
     <!-- Toast Notifications (Global) -->
     <ToastNotification />
+    
+    <!-- Cookie Consent Banner -->
+    <CookieConsent />
   </div>
 </template>
 

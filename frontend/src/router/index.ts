@@ -8,6 +8,21 @@ import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior(to, from, savedPosition) {
+    // If there's a saved position (e.g., browser back/forward), use it
+    if (savedPosition) {
+      return savedPosition
+    }
+    // If there's a hash in the route, scroll to that element
+    if (to.hash) {
+      return {
+        el: to.hash,
+        behavior: 'smooth'
+      }
+    }
+    // Otherwise, scroll to top
+    return { top: 0, behavior: 'smooth' }
+  },
   routes: [
     {
       path: '/',
@@ -32,6 +47,16 @@ const router = createRouter({
       name: 'forgot-password',
       component: ForgotPassword,
       meta: { requiresGuest: true }
+    },
+    {
+      path: '/privacy-policy',
+      name: 'privacy-policy',
+      component: () => import('../views/PrivacyPolicy.vue')
+    },
+    {
+      path: '/terms-of-service',
+      name: 'terms-of-service',
+      component: () => import('../views/TermsOfService.vue')
     },
     {
       path: '/dashboard',
@@ -173,8 +198,19 @@ const router = createRouter({
 })
 
 // Navigation guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+
+  // Check if token is expired (even if isAuthenticated might be true due to reactive updates)
+  if (authStore.token && authStore.checkTokenExpiration()) {
+    console.warn('Token expired during navigation, logging out...')
+    await authStore.logout()
+    // Redirect to login if trying to access protected route
+    if (to.meta.requiresAuth) {
+      next({ name: 'login' })
+      return
+    }
+  }
 
   // Check if route requires authentication
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {

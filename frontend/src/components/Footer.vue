@@ -69,14 +69,14 @@
             © {{ currentYear }} BLOODSA. All rights reserved. Website developed by <a href="https://tinyoptics.co.za/" target="_blank" class="text-bloodsa-red hover:text-bloodsa-light-red transition-colors duration-200">Tiny Optics</a>.
           </p>
           <div class="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" class="text-gray-400 hover:text-bloodsa-red transition-colors duration-200">
+            <router-link to="/privacy-policy" class="text-gray-400 hover:text-bloodsa-red transition-colors duration-200">
               <span class="sr-only">Privacy Policy</span>
               Privacy Policy
-            </a>
-            <a href="#" class="text-gray-400 hover:text-bloodsa-red transition-colors duration-200">
+            </router-link>
+            <router-link to="/terms-of-service" class="text-gray-400 hover:text-bloodsa-red transition-colors duration-200">
               <span class="sr-only">Terms of Service</span>
               Terms of Service
-            </a>
+            </router-link>
           </div>
         </div>
       </div>

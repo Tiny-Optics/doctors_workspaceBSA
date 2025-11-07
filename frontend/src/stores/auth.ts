@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, LoginRequest, LoginResponse, RegisterUserRequest } from '@/types/user'
+import { isTokenExpired } from '@/services/apiService'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -11,7 +12,13 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
 
   // Computed
-  const isAuthenticated = computed(() => !!user.value && !!token.value)
+  const isAuthenticated = computed(() => {
+    // Check if user and token exist, and token is not expired
+    if (!user.value || !token.value) {
+      return false
+    }
+    return !isTokenExpired(token.value)
+  })
   const isAdmin = computed(() => user.value?.role === 'admin')
   const isSuperAdmin = computed(() => user.value?.adminLevel === 'super_admin')
   const isUserManager = computed(() => user.value?.adminLevel === 'user_manager')
@@ -288,6 +295,16 @@ export const useAuthStore = defineStore('auth', () => {
     const storedUser = localStorage.getItem('user')
 
     if (storedToken && storedRefreshToken && storedUser) {
+      // Check if token is expired before initializing
+      if (isTokenExpired(storedToken)) {
+        console.warn('Stored token is expired, clearing auth state')
+        // Clear expired tokens
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('user')
+        return
+      }
+
       token.value = storedToken
       refreshToken.value = storedRefreshToken
       try {
@@ -297,6 +314,17 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.removeItem('user')
       }
     }
+  }
+
+  /**
+   * Checks if the current token is expired
+   * Useful for periodic checks
+   */
+  function checkTokenExpiration(): boolean {
+    if (!token.value) {
+      return true
+    }
+    return isTokenExpired(token.value)
   }
 
   function clearError(): void {
@@ -325,6 +353,7 @@ export const useAuthStore = defineStore('auth', () => {
     fetchCurrentUser,
     changePassword,
     initializeFromStorage,
+    checkTokenExpiration,
     clearError
   }
 })

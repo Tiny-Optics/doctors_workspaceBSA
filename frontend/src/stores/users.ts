@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { User, CreateUserRequest, UpdateUserRequest, UsersListResponse, UserRole } from '@/types/user'
 import { useAuthStore } from './auth'
+import { ApiService } from '@/services/apiService'
 
 export const useUsersStore = defineStore('users', () => {
   // State
@@ -41,9 +42,7 @@ export const useUsersStore = defineStore('users', () => {
       if (options?.limit) params.append('limit', String(options.limit))
       if (options?.skip) params.append('skip', String(options.skip))
 
-      const response = await fetch(`/api/users?${params.toString()}`, {
-        headers: getAuthHeaders()
-      })
+      const response = await ApiService.get(`/api/users?${params.toString()}`)
 
       if (!response.ok) {
         let errorMessage = 'Failed to fetch users'
@@ -51,8 +50,7 @@ export const useUsersStore = defineStore('users', () => {
           const errorData = await response.json()
           errorMessage = errorData.error || errorMessage
         } catch (parseError) {
-          // Use status-based error message if JSON parsing fails
-          errorMessage = response.status === 401 ? 'Session expired' : errorMessage
+          errorMessage = 'Failed to fetch users'
         }
         throw new Error(errorMessage)
       }
@@ -73,9 +71,7 @@ export const useUsersStore = defineStore('users', () => {
     error.value = null
 
     try {
-      const response = await fetch(`/api/users/${id}`, {
-        headers: getAuthHeaders()
-      })
+      const response = await ApiService.get(`/api/users/${id}`)
 
       if (!response.ok) {
         let errorMessage = 'Failed to fetch user'
