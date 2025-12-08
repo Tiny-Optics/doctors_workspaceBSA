@@ -20,21 +20,24 @@ var (
 
 // UserService handles user management operations
 type UserService struct {
-	userRepo    *repository.UserRepository
-	auditRepo   *repository.AuditRepository
-	authService *AuthService
+	userRepo        *repository.UserRepository
+	institutionRepo *repository.InstitutionRepository
+	auditRepo       *repository.AuditRepository
+	authService     *AuthService
 }
 
 // NewUserService creates a new UserService
 func NewUserService(
 	userRepo *repository.UserRepository,
+	institutionRepo *repository.InstitutionRepository,
 	auditRepo *repository.AuditRepository,
 	authService *AuthService,
 ) *UserService {
 	return &UserService{
-		userRepo:    userRepo,
-		auditRepo:   auditRepo,
-		authService: authService,
+		userRepo:        userRepo,
+		institutionRepo: institutionRepo,
+		auditRepo:       auditRepo,
+		authService:     authService,
 	}
 }
 
@@ -244,6 +247,29 @@ func (s *UserService) UpdateUser(ctx context.Context, userID primitive.ObjectID,
 		if err != nil {
 			return nil, errors.New("invalid institution ID format")
 		}
+
+		// Validate institution exists
+		institution, err := s.institutionRepo.FindByID(ctx, institutionID)
+		if err != nil {
+			if err == repository.ErrInstitutionNotFound {
+				return nil, errors.New("institution not found")
+			}
+			return nil, err
+		}
+
+		// If user is updating themselves (not an admin), validate institution access
+		if updatedBy.ID == targetUser.ID && !updatedBy.HasPermission(models.PermManageUsers) {
+			// Regular users can only select:
+			// 1. Active institutions, OR
+			// 2. Institutions they created (even if inactive)
+			if !institution.IsActive {
+				// Check if user created this institution
+				if institution.CreatedBy == nil || *institution.CreatedBy != updatedBy.ID {
+					return nil, errors.New("cannot select inactive institution that you did not create")
+				}
+			}
+		}
+
 		update["profile.institution_id"] = institutionID
 		details["institution_id"] = *req.InstitutionID
 	}

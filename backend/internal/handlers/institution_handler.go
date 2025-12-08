@@ -73,6 +73,101 @@ func (h *InstitutionHandler) CreateInstitution(c *gin.Context) {
 	c.JSON(http.StatusCreated, institution)
 }
 
+// CreateUserInstitution godoc
+// @Summary Create a new institution (user)
+// @Description Create a new institution by a regular user. Institution will be created as active.
+// @Tags institutions
+// @Accept json
+// @Produce json
+// @Param request body models.CreateInstitutionRequest true "Institution information"
+// @Success 201 {object} models.Institution
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Router /institutions/user/create [post]
+// @Security BearerAuth
+func (h *InstitutionHandler) CreateUserInstitution(c *gin.Context) {
+	var req models.CreateInstitutionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	createdBy, err := middleware.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	ipAddress := middleware.GetIPAddress(c)
+
+	institution, err := h.institutionService.CreateUserInstitution(c.Request.Context(), &req, createdBy, ipAddress)
+	if err != nil {
+		statusCode := http.StatusBadRequest
+		if err == repository.ErrDuplicateInstitution {
+			statusCode = http.StatusConflict
+		}
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, institution)
+}
+
+// UpdateUserInstitution godoc
+// @Summary Update an institution (user)
+// @Description Update institution information by a regular user (only if they created it)
+// @Tags institutions
+// @Accept json
+// @Produce json
+// @Param id path string true "Institution ID"
+// @Param request body models.UpdateInstitutionRequest true "Updated institution information"
+// @Success 200 {object} models.Institution
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /institutions/user/{id} [put]
+// @Security BearerAuth
+func (h *InstitutionHandler) UpdateUserInstitution(c *gin.Context) {
+	idParam := c.Param("id")
+	institutionID, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid institution ID"})
+		return
+	}
+
+	var req models.UpdateInstitutionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	updatedBy, err := middleware.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	ipAddress := middleware.GetIPAddress(c)
+
+	institution, err := h.institutionService.UpdateUserInstitution(c.Request.Context(), institutionID, &req, updatedBy, ipAddress)
+	if err != nil {
+		statusCode := http.StatusBadRequest
+		if err == service.ErrUnauthorized {
+			statusCode = http.StatusForbidden
+		} else if err == repository.ErrInstitutionNotFound {
+			statusCode = http.StatusNotFound
+		} else if err == repository.ErrDuplicateInstitution {
+			statusCode = http.StatusConflict
+		}
+		c.JSON(statusCode, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, institution)
+}
+
 // GetInstitution godoc
 // @Summary Get an institution by ID
 // @Description Get institution information by ID
@@ -435,6 +530,79 @@ func (h *InstitutionHandler) UploadImage(c *gin.Context) {
 	}
 
 	// Create uploads directory if it doesn't exist
+	uploadDir := "./uploads/institutions"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create upload directory"})
+		return
+	}
+
+	// Generate unique filename
+	filename := fmt.Sprintf("%d_%s%s", time.Now().Unix(), generateRandomString(8), ext)
+	filePath := filepath.Join(uploadDir, filename)
+
+	// Save file
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
+		return
+	}
+
+	// Return relative path for database storage
+	imagePath := "/uploads/institutions/" + filename
+
+	c.JSON(http.StatusOK, gin.H{
+		"imagePath": imagePath,
+		"message":   "image uploaded successfully",
+	})
+}
+
+// UploadUserImage godoc
+// @Summary Upload institution logo (user)
+// @Description Upload an image for institution logo by a regular user (any authenticated user can upload)
+// @Tags institutions
+// @Accept multipart/form-data
+// @Produce json
+// @Param image formData file true "Image file (jpg, jpeg, png, webp, max 5MB)"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /institutions/user/images/upload [post]
+// @Security BearerAuth
+func (h *InstitutionHandler) UploadUserImage(c *gin.Context) {
+	_, err := middleware.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// Get file from form
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "image file is required"})
+		return
+	}
+
+	// Validate file size (max 5MB)
+	if file.Size > 5*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "image size must be less than 5MB"})
+		return
+	}
+
+	// Validate file extension
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowedExts := []string{".jpg", ".jpeg", ".png", ".webp"}
+	allowed := false
+	for _, allowedExt := range allowedExts {
+		if ext == allowedExt {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid file type. Only jpg, jpeg, png, and webp are allowed"})
+		return
+	}
+
+	// Create upload directory if it doesn't exist
 	uploadDir := "./uploads/institutions"
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create upload directory"})
