@@ -232,7 +232,6 @@
     <div 
       v-if="showCreateForm || editingForm" 
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      @click="closeFormModal"
     >
       <div 
         @click.stop
@@ -419,7 +418,6 @@
     <div
       v-if="showPreview"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      @click="showPreview = false"
     >
       <div
         @click.stop
@@ -549,8 +547,7 @@
     <!-- Delete Confirmation Modal -->
     <div 
       v-if="showDeleteModal" 
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" 
-      @click="cancelDelete"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
     >
       <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white" @click.stop>
         <div class="mt-3">
