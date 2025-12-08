@@ -530,12 +530,12 @@
                         v-for="institution in institutionsStore.institutions" 
                         :key="institution.id" 
                         :value="institution.id"
-                        :title="`${institution.name} - ${institution.city}, ${institution.province || ''}`"
+                        :title="getInstitutionLocationTooltip(institution)"
                       >
-                        {{ institution.shortName || institution.name.substring(0, 30) }} - {{ institution.city }}
+                        {{ institution.name }}
                       </option>
                     </select>
-                    <p class="text-xs text-gray-500 mt-1">Select the user's affiliated institution (hover for full name)</p>
+                    <p class="text-xs text-gray-500 mt-1">Select the user's affiliated institution (hover for location details)</p>
                   </div>
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
@@ -726,9 +726,9 @@
                         v-for="institution in institutionsStore.institutions" 
                         :key="institution.id" 
                         :value="institution.id"
-                        :title="`${institution.name} - ${institution.city}, ${institution.province || ''}`"
+                        :title="getInstitutionLocationTooltip(institution)"
                       >
-                        {{ institution.shortName || institution.name.substring(0, 30) }} - {{ institution.city }}
+                        {{ institution.name }}
                       </option>
                     </select>
                   </div>
@@ -1134,6 +1134,15 @@ const getInstitutionName = (institutionId?: string): string => {
   if (!institutionId) return 'N/A'
   const institution = institutionsStore.institutions.find(i => i.id === institutionId)
   return institution ? `${institution.name}` : 'Unknown Institution'
+}
+
+// Helper to get institution location tooltip
+const getInstitutionLocationTooltip = (institution: any): string => {
+  const parts: string[] = []
+  if (institution.city) parts.push(institution.city)
+  if (institution.province) parts.push(institution.province)
+  if (institution.country) parts.push(institution.country)
+  return parts.length > 0 ? parts.join(', ') : 'Location not specified'
 }
 
 // Helper to get institution display with location
