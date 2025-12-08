@@ -55,6 +55,7 @@ func (s *InstitutionService) CreateInstitution(ctx context.Context, req *models.
 		Phone:      req.Phone,
 		Email:      req.Email,
 		Website:    req.Website,
+		ImagePath:  req.ImagePath,
 		IsActive:   true,
 		CreatedBy:  &createdBy.ID,
 	}
@@ -144,6 +145,9 @@ func (s *InstitutionService) UpdateInstitution(ctx context.Context, id primitive
 	}
 	if req.Website != nil {
 		update["website"] = *req.Website
+	}
+	if req.ImagePath != nil {
+		update["image_path"] = *req.ImagePath
 	}
 	if req.IsActive != nil {
 		update["is_active"] = *req.IsActive
@@ -334,4 +338,3 @@ func (s *InstitutionService) CountInstitutions(ctx context.Context, isActive *bo
 	}
 	return s.institutionRepo.Count(ctx, filter)
 }
-

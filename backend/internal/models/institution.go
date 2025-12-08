@@ -9,22 +9,23 @@ import (
 
 // Institution represents a medical institution or organization
 type Institution struct {
-	ID          primitive.ObjectID  `bson:"_id,omitempty" json:"id"`
-	Name        string              `bson:"name" json:"name"`
-	ShortName   string              `bson:"short_name,omitempty" json:"shortName,omitempty"`
-	Type        InstitutionType     `bson:"type" json:"type"`
-	Country     string              `bson:"country" json:"country"`
-	Province    string              `bson:"province,omitempty" json:"province,omitempty"`
-	City        string              `bson:"city" json:"city"`
-	Address     string              `bson:"address,omitempty" json:"address,omitempty"`
-	PostalCode  string              `bson:"postal_code,omitempty" json:"postalCode,omitempty"`
-	Phone       string              `bson:"phone,omitempty" json:"phone,omitempty"`
-	Email       string              `bson:"email,omitempty" json:"email,omitempty"`
-	Website     string              `bson:"website,omitempty" json:"website,omitempty"`
-	IsActive    bool                `bson:"is_active" json:"isActive"`
-	CreatedAt   time.Time           `bson:"created_at" json:"createdAt"`
-	UpdatedAt   time.Time           `bson:"updated_at" json:"updatedAt"`
-	CreatedBy   *primitive.ObjectID `bson:"created_by,omitempty" json:"createdBy,omitempty"`
+	ID         primitive.ObjectID  `bson:"_id,omitempty" json:"id"`
+	Name       string              `bson:"name" json:"name"`
+	ShortName  string              `bson:"short_name,omitempty" json:"shortName,omitempty"`
+	Type       InstitutionType     `bson:"type" json:"type"`
+	Country    string              `bson:"country" json:"country"`
+	Province   string              `bson:"province,omitempty" json:"province,omitempty"`
+	City       string              `bson:"city" json:"city"`
+	Address    string              `bson:"address,omitempty" json:"address,omitempty"`
+	PostalCode string              `bson:"postal_code,omitempty" json:"postalCode,omitempty"`
+	Phone      string              `bson:"phone,omitempty" json:"phone,omitempty"`
+	Email      string              `bson:"email,omitempty" json:"email,omitempty"`
+	Website    string              `bson:"website,omitempty" json:"website,omitempty"`
+	ImagePath  string              `bson:"image_path,omitempty" json:"imagePath,omitempty"`
+	IsActive   bool                `bson:"is_active" json:"isActive"`
+	CreatedAt  time.Time           `bson:"created_at" json:"createdAt"`
+	UpdatedAt  time.Time           `bson:"updated_at" json:"updatedAt"`
+	CreatedBy  *primitive.ObjectID `bson:"created_by,omitempty" json:"createdBy,omitempty"`
 }
 
 // InstitutionType represents the type of institution
@@ -70,6 +71,7 @@ type CreateInstitutionRequest struct {
 	Phone      string          `json:"phone,omitempty"`
 	Email      string          `json:"email,omitempty"`
 	Website    string          `json:"website,omitempty"`
+	ImagePath  string          `json:"imagePath,omitempty"`
 }
 
 // UpdateInstitutionRequest represents the request to update an institution
@@ -85,17 +87,18 @@ type UpdateInstitutionRequest struct {
 	Phone      *string          `json:"phone,omitempty"`
 	Email      *string          `json:"email,omitempty"`
 	Website    *string          `json:"website,omitempty"`
+	ImagePath  *string          `json:"imagePath,omitempty"`
 	IsActive   *bool            `json:"isActive,omitempty"`
 }
 
 // Validation errors
 var (
-	ErrInstitutionNameRequired     = errors.New("institution name is required")
-	ErrInstitutionNameTooShort     = errors.New("institution name must be at least 2 characters")
-	ErrInstitutionNameTooLong      = errors.New("institution name must be at most 200 characters")
-	ErrInvalidInstitutionType      = errors.New("invalid institution type")
-	ErrInstitutionCountryRequired  = errors.New("country is required")
-	ErrInstitutionCityRequired     = errors.New("city is required")
+	ErrInstitutionNameRequired    = errors.New("institution name is required")
+	ErrInstitutionNameTooShort    = errors.New("institution name must be at least 2 characters")
+	ErrInstitutionNameTooLong     = errors.New("institution name must be at most 200 characters")
+	ErrInvalidInstitutionType     = errors.New("invalid institution type")
+	ErrInstitutionCountryRequired = errors.New("country is required")
+	ErrInstitutionCityRequired    = errors.New("city is required")
 )
 
 // Validate validates the CreateInstitutionRequest
@@ -148,4 +151,3 @@ func (i *Institution) GetDisplayName() string {
 	}
 	return i.Name
 }
-

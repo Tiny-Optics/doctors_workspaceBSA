@@ -304,6 +304,45 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     }
   }
 
+  async function uploadImage(file: File): Promise<string> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const token = authStore.token
+      const formData = new FormData()
+      formData.append('image', file)
+
+      const response = await fetch('/api/institutions/images/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Note: Don't set Content-Type, browser will set it with boundary for multipart
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to upload image'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = 'Failed to upload image'
+        }
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json()
+      isLoading.value = false
+      return data.imagePath
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to upload image'
+      isLoading.value = false
+      throw err
+    }
+  }
+
   return {
     // State
     institutions,
@@ -319,7 +358,8 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     updateInstitution,
     deleteInstitution,
     activateInstitution,
-    deactivateInstitution
+    deactivateInstitution,
+    uploadImage
   }
 })
 

@@ -1,8 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"backend/internal/middleware"
 	"backend/internal/models"
@@ -373,5 +378,84 @@ func (h *InstitutionHandler) ListPublicInstitutions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"institutions": institutions,
 		"total":        count,
+	})
+}
+
+// UploadImage godoc
+// @Summary Upload institution logo
+// @Description Upload an image for institution logo (requires manage users permission)
+// @Tags institutions
+// @Accept multipart/form-data
+// @Produce json
+// @Param image formData file true "Image file (jpg, jpeg, png, webp, max 5MB)"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Router /institutions/images/upload [post]
+// @Security BearerAuth
+func (h *InstitutionHandler) UploadImage(c *gin.Context) {
+	user, err := middleware.GetUserFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// Check permission - requires manage users permission
+	if !user.HasPermission(models.PermManageUsers) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+		return
+	}
+
+	// Get file from form
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "image file is required"})
+		return
+	}
+
+	// Validate file size (max 5MB)
+	if file.Size > 5*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "image size must be less than 5MB"})
+		return
+	}
+
+	// Validate file extension
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	validExtensions := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".webp": true,
+	}
+
+	if !validExtensions[ext] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid image format. Allowed: jpg, jpeg, png, webp"})
+		return
+	}
+
+	// Create uploads directory if it doesn't exist
+	uploadDir := "./uploads/institutions"
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create upload directory"})
+		return
+	}
+
+	// Generate unique filename
+	filename := fmt.Sprintf("%d_%s%s", time.Now().Unix(), generateRandomString(8), ext)
+	filePath := filepath.Join(uploadDir, filename)
+
+	// Save file
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
+		return
+	}
+
+	// Return relative path for database storage
+	imagePath := "/uploads/institutions/" + filename
+
+	c.JSON(http.StatusOK, gin.H{
+		"imagePath": imagePath,
+		"message":   "image uploaded successfully",
 	})
 }

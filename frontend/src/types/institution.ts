@@ -21,6 +21,7 @@ export interface Institution {
   phone?: string
   email?: string
   website?: string
+  imagePath?: string
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -39,6 +40,7 @@ export interface CreateInstitutionRequest {
   phone?: string
   email?: string
   website?: string
+  imagePath?: string
 }
 
 export interface UpdateInstitutionRequest {
@@ -53,7 +55,8 @@ export interface UpdateInstitutionRequest {
   phone?: string
   email?: string
   website?: string
-  isActive?: boolean
+  imagePath?: string
+  isActive?: bool
 }
 
 export interface InstitutionsListResponse {

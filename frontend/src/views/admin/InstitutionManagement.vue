@@ -164,7 +164,14 @@
             <tr v-for="institution in displayInstitutions" :key="institution.id" class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
-                  <div class="w-10 h-10 bg-bloodsa-red rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                  <div v-if="institution.imagePath" class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                    <img 
+                      :src="institution.imagePath" 
+                      :alt="institution.name" 
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div v-else class="w-10 h-10 bg-bloodsa-red rounded-full flex items-center justify-center text-white font-semibold text-xs">
                     {{ institution.shortName || institution.name.substring(0, 2).toUpperCase() }}
                   </div>
                   <div class="ml-4">
@@ -352,7 +359,7 @@
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-2xl font-bold text-gray-900">Create New Institution</h3>
             <button
-              @click="showCreateModal = false"
+              @click="closeCreateModal"
               class="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -510,27 +517,73 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Logo Upload -->
+              <div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Institution Logo (Optional)
+                </h4>
+                <div class="flex items-center gap-4">
+                  <div 
+                    v-if="imagePreview"
+                    class="relative"
+                  >
+                    <img
+                      :src="imagePreview"
+                      alt="Preview"
+                      class="h-24 w-24 rounded object-cover border-2 border-gray-200"
+                    />
+                    <button
+                      @click="clearImage"
+                      type="button"
+                      class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <label class="flex-1 cursor-pointer">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-bloodsa-red transition-colors">
+                      <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <p class="text-sm text-gray-600">Click to upload logo</p>
+                      <p class="text-xs text-gray-500 mt-1">JPG, PNG, WEBP (max 5MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      @change="handleImageUpload"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      class="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
 
             <!-- Form Actions -->
             <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
               <button
                 type="button"
-                @click="showCreateModal = false"
+                @click="closeCreateModal"
                 class="px-6 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                :disabled="loading"
+                :disabled="loading || uploading"
                 class="px-6 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
-                <svg v-if="loading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <svg v-if="loading || uploading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>{{ loading ? 'Creating Institution...' : 'Create Institution' }}</span>
+                <span>{{ loading || uploading ? 'Creating Institution...' : 'Create Institution' }}</span>
               </button>
             </div>
           </form>
@@ -544,7 +597,14 @@
         <!-- Modal Header -->
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center space-x-4">
-            <div class="w-16 h-16 bg-bloodsa-red rounded-full flex items-center justify-center text-white text-xl font-bold">
+            <div v-if="institutionToView.imagePath" class="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+              <img 
+                :src="institutionToView.imagePath" 
+                :alt="institutionToView.name" 
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <div v-else class="w-16 h-16 bg-bloodsa-red rounded-full flex items-center justify-center text-white text-xl font-bold">
               {{ institutionToView.shortName || institutionToView.name.substring(0, 2).toUpperCase() }}
             </div>
             <div>
@@ -701,7 +761,7 @@
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-2xl font-bold text-gray-900">Edit Institution</h3>
             <button
-              @click="showEditModal = false; institutionToEdit = null"
+              @click="closeEditModal"
               class="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -848,27 +908,73 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Logo Upload -->
+              <div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                  <svg class="w-5 h-5 mr-2 text-bloodsa-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Institution Logo (Optional)
+                </h4>
+                <div class="flex items-center gap-4">
+                  <div 
+                    v-if="editImagePreview || (institutionToEdit && institutionToEdit.imagePath)"
+                    class="relative"
+                  >
+                    <img
+                      :src="editImagePreview || institutionToEdit?.imagePath"
+                      alt="Preview"
+                      class="h-24 w-24 rounded object-cover border-2 border-gray-200"
+                    />
+                    <button
+                      @click="clearEditImage"
+                      type="button"
+                      class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <label class="flex-1 cursor-pointer">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-bloodsa-red transition-colors">
+                      <svg class="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <p class="text-sm text-gray-600">Click to upload logo</p>
+                      <p class="text-xs text-gray-500 mt-1">JPG, PNG, WEBP (max 5MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      @change="handleEditImageUpload"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      class="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
 
             <!-- Form Actions -->
             <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
               <button
                 type="button"
-                @click="showEditModal = false; institutionToEdit = null"
+                @click="closeEditModal"
                 class="px-6 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                :disabled="loading"
+                :disabled="loading || uploading"
                 class="px-6 py-2 bg-bloodsa-red text-white rounded-md hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
-                <svg v-if="loading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <svg v-if="loading || uploading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                   <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span>{{ loading ? 'Updating...' : 'Update Institution' }}</span>
+                <span>{{ loading || uploading ? 'Updating...' : 'Update Institution' }}</span>
               </button>
             </div>
           </form>
@@ -975,8 +1081,16 @@ const newInstitution = ref({
   postalCode: '',
   phone: '',
   email: '',
-  website: ''
+  website: '',
+  imagePath: ''
 })
+
+// Image upload state
+const imageFile = ref<File | null>(null)
+const imagePreview = ref<string | null>(null)
+const editImageFile = ref<File | null>(null)
+const editImagePreview = ref<string | null>(null)
+const uploading = ref(false)
 
 // Real institutions data from API
 const institutions = ref<Institution[]>([])
@@ -1033,8 +1147,57 @@ const closeViewModal = () => {
 const editInstitution = (institution: Institution) => {
   // Create a copy to avoid mutating the original
   institutionToEdit.value = { ...institution }
+  // Reset image upload state
+  editImageFile.value = null
+  editImagePreview.value = null
   showViewModal.value = false // Close view modal if open
   showEditModal.value = true
+}
+
+const handleImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    imageFile.value = file
+    imagePreview.value = URL.createObjectURL(file)
+  }
+}
+
+const clearImage = () => {
+  imageFile.value = null
+  imagePreview.value = null
+  newInstitution.value.imagePath = ''
+}
+
+const handleEditImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    editImageFile.value = file
+    editImagePreview.value = URL.createObjectURL(file)
+  }
+}
+
+const clearEditImage = () => {
+  editImageFile.value = null
+  editImagePreview.value = null
+  if (institutionToEdit.value) {
+    institutionToEdit.value.imagePath = ''
+  }
+}
+
+const closeCreateModal = () => {
+  showCreateModal.value = false
+  imageFile.value = null
+  imagePreview.value = null
+  newInstitution.value.imagePath = ''
+}
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  institutionToEdit.value = null
+  editImageFile.value = null
+  editImagePreview.value = null
 }
 
 const updateInstitution = async () => {
@@ -1045,7 +1208,14 @@ const updateInstitution = async () => {
   
   try {
     loading.value = true
+    uploading.value = true
     error.value = null
+    
+    // Upload image if a new one was selected
+    if (editImageFile.value) {
+      const imagePath = await institutionsStore.uploadImage(editImageFile.value)
+      institutionToEdit.value.imagePath = imagePath
+    }
     
     const updateData = {
       name: institutionToEdit.value.name,
@@ -1058,14 +1228,14 @@ const updateInstitution = async () => {
       postalCode: institutionToEdit.value.postalCode || undefined,
       phone: institutionToEdit.value.phone || undefined,
       email: institutionToEdit.value.email || undefined,
-      website: institutionToEdit.value.website || undefined
+      website: institutionToEdit.value.website || undefined,
+      imagePath: institutionToEdit.value.imagePath || undefined
     }
     
     await institutionsStore.updateInstitution(institutionId, updateData)
     await loadInstitutions()
     
-    showEditModal.value = false
-    institutionToEdit.value = null
+    closeEditModal()
     
     toast.success(`${institutionName} has been successfully updated`)
   } catch (err) {
@@ -1074,6 +1244,7 @@ const updateInstitution = async () => {
     toast.error(`Failed to update ${institutionName}. ${err instanceof Error ? err.message : 'Please try again.'}`)
   } finally {
     loading.value = false
+    uploading.value = false
   }
 }
 
@@ -1141,7 +1312,14 @@ const createInstitution = async () => {
   
   try {
     loading.value = true
+    uploading.value = true
     error.value = null
+    
+    // Upload image if selected
+    if (imageFile.value) {
+      const imagePath = await institutionsStore.uploadImage(imageFile.value)
+      newInstitution.value.imagePath = imagePath
+    }
     
     const institutionData = {
       name: newInstitution.value.name,
@@ -1154,13 +1332,14 @@ const createInstitution = async () => {
       postalCode: newInstitution.value.postalCode || undefined,
       phone: newInstitution.value.phone || undefined,
       email: newInstitution.value.email || undefined,
-      website: newInstitution.value.website || undefined
+      website: newInstitution.value.website || undefined,
+      imagePath: newInstitution.value.imagePath || undefined
     }
     
     await institutionsStore.createInstitution(institutionData)
     await loadInstitutions()
     
-    showCreateModal.value = false
+    closeCreateModal()
     
     // Reset form
     newInstitution.value = {
@@ -1174,7 +1353,8 @@ const createInstitution = async () => {
       postalCode: '',
       phone: '',
       email: '',
-      website: ''
+      website: '',
+      imagePath: ''
     }
     
     toast.success(`${institutionName} has been successfully created`)
@@ -1184,6 +1364,7 @@ const createInstitution = async () => {
     toast.error(`Failed to create ${institutionName}. ${err instanceof Error ? err.message : 'Please try again.'}`)
   } finally {
     loading.value = false
+    uploading.value = false
   }
 }
 

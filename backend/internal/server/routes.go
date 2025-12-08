@@ -167,6 +167,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 			institutions.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), institutionHandler.DeleteInstitution)
 			institutions.POST("/:id/activate", middleware.RequirePermission(models.PermManageUsers), institutionHandler.ActivateInstitution)
 			institutions.POST("/:id/deactivate", middleware.RequirePermission(models.PermManageUsers), institutionHandler.DeactivateInstitution)
+
+			// Institution image upload (requires manage users permission)
+			institutions.POST("/images/upload", middleware.RequirePermission(models.PermManageUsers), institutionHandler.UploadImage)
 		}
 
 		// Stats routes (all protected)
