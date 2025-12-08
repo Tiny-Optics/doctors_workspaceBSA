@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"strings"
 
 	"backend/internal/models"
 	"backend/internal/repository"
@@ -383,6 +384,14 @@ func (s *SOPCategoryService) GetCategoryFiles(
 		return nil, fmt.Errorf("failed to list files: %w", err)
 	}
 
+	// Make paths relative to category folder for easier handling
+	// Dropbox returns full paths, but we want paths relative to the category folder
+	categoryPath := strings.TrimPrefix(category.DropboxPath, "/")
+	categoryPath = strings.TrimSuffix(categoryPath, "/")
+
+	// Recursively make paths relative
+	s.makePathsRelative(files, categoryPath)
+
 	return files, nil
 }
 
@@ -409,7 +418,18 @@ func (s *SOPCategoryService) GetFileDownloadLink(
 	if decoded, err := url.PathUnescape(dropboxPath); err == nil {
 		dropboxPath = decoded
 	}
-	fullPath := filepath.Join(dropboxPath, filePath)
+
+	// Normalize paths
+	dropboxPath = strings.TrimPrefix(dropboxPath, "/")
+	dropboxPath = strings.TrimSuffix(dropboxPath, "/")
+	filePath = strings.TrimPrefix(filePath, "/")
+
+	// Join category path with file path (filePath should be relative to category folder)
+	fullPath := "/" + filepath.Join(dropboxPath, filePath)
+
+	// Normalize the path (remove double slashes, handle Windows separators)
+	fullPath = strings.ReplaceAll(fullPath, "\\", "/")
+	fullPath = strings.ReplaceAll(fullPath, "//", "/")
 
 	// Get download link
 	link, err := s.dropboxService.GetFileDownloadLink(fullPath)
@@ -421,6 +441,26 @@ func (s *SOPCategoryService) GetFileDownloadLink(
 	}
 
 	return link, nil
+}
+
+// makePathsRelative recursively converts full Dropbox paths to paths relative to category folder
+func (s *SOPCategoryService) makePathsRelative(files []DropboxFileInfo, categoryPath string) {
+	for i := range files {
+		// Remove category path prefix from file path
+		fullPath := strings.TrimPrefix(files[i].Path, "/")
+		if strings.HasPrefix(fullPath, categoryPath+"/") {
+			// Path includes category, make it relative
+			files[i].Path = strings.TrimPrefix(fullPath, categoryPath+"/")
+		} else if fullPath == categoryPath {
+			// This is the category folder itself, use empty path
+			files[i].Path = ""
+		}
+
+		// Recursively process children
+		if files[i].IsFolder && len(files[i].Children) > 0 {
+			s.makePathsRelative(files[i].Children, categoryPath)
+		}
+	}
 }
 
 // CountCategories returns the total count of SOP categories
