@@ -1,6 +1,6 @@
 # Makefile for BLOODSA Doctor's Workspace
 
-.PHONY: help dev cloudways build start stop restart logs clean backup
+.PHONY: help dev dev-logs dev-stop dev-restart dev-rebuild cloudways build start stop restart logs clean backup
 
 # Default target
 help:
@@ -10,6 +10,8 @@ help:
 	@echo "  make dev          - Start development environment"
 	@echo "  make dev-logs     - View development logs"
 	@echo "  make dev-stop     - Stop development environment"
+	@echo "  make dev-restart  - Restart development environment"
+	@echo "  make dev-rebuild  - Rebuild and restart development environment"
 	@echo ""
 	@echo "Production (Cloudways Shared Hosting):"
 	@echo "  make cloudways        - Deploy on Cloudways shared server"
@@ -36,6 +38,18 @@ dev-logs:
 
 dev-stop:
 	docker compose down
+
+dev-restart:
+	docker compose restart
+	@echo "Development environment restarted"
+	@echo "Frontend: http://localhost:5173"
+	@echo "Backend:  http://localhost:8080"
+
+dev-rebuild:
+	docker compose up -d --build
+	@echo "Development environment rebuilt and started"
+	@echo "Frontend: http://localhost:5173"
+	@echo "Backend:  http://localhost:8080"
 
 # Cloudways commands (Production)
 cloudways:

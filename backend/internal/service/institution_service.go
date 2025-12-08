@@ -55,6 +55,7 @@ func (s *InstitutionService) CreateInstitution(ctx context.Context, req *models.
 		Phone:      req.Phone,
 		Email:      req.Email,
 		Website:    req.Website,
+		ImagePath:  req.ImagePath,
 		IsActive:   true,
 		CreatedBy:  &createdBy.ID,
 	}
@@ -73,6 +74,63 @@ func (s *InstitutionService) CreateInstitution(ctx context.Context, req *models.
 			"institution_name": institution.Name,
 			"type":             string(institution.Type),
 			"city":             institution.City,
+		},
+	})
+
+	return institution, nil
+}
+
+// CreateUserInstitution creates a new institution by a regular user (for profile page)
+// Institutions created by users are created as active
+func (s *InstitutionService) CreateUserInstitution(ctx context.Context, req *models.CreateInstitutionRequest, createdBy *models.User, ipAddress string) (*models.Institution, error) {
+	// Validate request
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
+	// Check for duplicate name
+	exists, err := s.institutionRepo.NameExists(ctx, req.Name, nil)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, repository.ErrDuplicateInstitution
+	}
+
+	// Create institution as active (users can create active institutions)
+	institution := &models.Institution{
+		Name:       req.Name,
+		ShortName:  req.ShortName,
+		Type:       req.Type,
+		Country:    req.Country,
+		Province:   req.Province,
+		City:       req.City,
+		Address:    req.Address,
+		PostalCode: req.PostalCode,
+		Phone:      req.Phone,
+		Email:      req.Email,
+		Website:    req.Website,
+		ImagePath:  req.ImagePath,
+		IsActive:   true, // Created as active
+		CreatedBy:  &createdBy.ID,
+	}
+
+	if err := s.institutionRepo.Create(ctx, institution); err != nil {
+		return nil, err
+	}
+
+	// Log audit
+	s.auditRepo.Create(ctx, &models.AuditLog{
+		PerformedBy: &createdBy.ID,
+		Action:      models.AuditActionInstitutionCreated,
+		IPAddress:   ipAddress,
+		Details: map[string]interface{}{
+			"institution_id":   institution.ID.Hex(),
+			"institution_name": institution.Name,
+			"type":             string(institution.Type),
+			"city":             institution.City,
+			"created_by_user":  true, // Flag to indicate this was created by a regular user
+			"is_active":        true,
 		},
 	})
 
@@ -145,6 +203,9 @@ func (s *InstitutionService) UpdateInstitution(ctx context.Context, id primitive
 	if req.Website != nil {
 		update["website"] = *req.Website
 	}
+	if req.ImagePath != nil {
+		update["image_path"] = *req.ImagePath
+	}
 	if req.IsActive != nil {
 		update["is_active"] = *req.IsActive
 	}
@@ -166,6 +227,96 @@ func (s *InstitutionService) UpdateInstitution(ctx context.Context, id primitive
 			"institution_id":   id.Hex(),
 			"institution_name": institution.Name,
 			"updated_fields":   update,
+		},
+	})
+
+	return s.institutionRepo.FindByID(ctx, id)
+}
+
+// UpdateUserInstitution updates an institution by a regular user (only if they created it)
+func (s *InstitutionService) UpdateUserInstitution(ctx context.Context, id primitive.ObjectID, req *models.UpdateInstitutionRequest, updatedBy *models.User, ipAddress string) (*models.Institution, error) {
+	// Get existing institution
+	institution, err := s.institutionRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if user created this institution
+	if institution.CreatedBy == nil || *institution.CreatedBy != updatedBy.ID {
+		return nil, ErrUnauthorized
+	}
+
+	// Build update document
+	update := bson.M{}
+	if req.Name != nil {
+		// Check for duplicate name
+		if *req.Name != institution.Name {
+			exists, err := s.institutionRepo.NameExists(ctx, *req.Name, &id)
+			if err != nil {
+				return nil, err
+			}
+			if exists {
+				return nil, repository.ErrDuplicateInstitution
+			}
+			update["name"] = *req.Name
+		}
+	}
+	if req.ShortName != nil {
+		update["short_name"] = *req.ShortName
+	}
+	if req.Type != nil {
+		if !req.Type.IsValid() {
+			return nil, models.ErrInvalidInstitutionType
+		}
+		update["type"] = *req.Type
+	}
+	if req.Country != nil {
+		update["country"] = *req.Country
+	}
+	if req.Province != nil {
+		update["province"] = *req.Province
+	}
+	if req.City != nil {
+		update["city"] = *req.City
+	}
+	if req.Address != nil {
+		update["address"] = *req.Address
+	}
+	if req.PostalCode != nil {
+		update["postal_code"] = *req.PostalCode
+	}
+	if req.Phone != nil {
+		update["phone"] = *req.Phone
+	}
+	if req.Email != nil {
+		update["email"] = *req.Email
+	}
+	if req.Website != nil {
+		update["website"] = *req.Website
+	}
+	if req.ImagePath != nil {
+		update["image_path"] = *req.ImagePath
+	}
+	// Users cannot change IsActive status
+
+	if len(update) == 0 {
+		return institution, nil
+	}
+
+	if err := s.institutionRepo.Update(ctx, id, update); err != nil {
+		return nil, err
+	}
+
+	// Log audit
+	s.auditRepo.Create(ctx, &models.AuditLog{
+		PerformedBy: &updatedBy.ID,
+		Action:      models.AuditActionInstitutionUpdated,
+		IPAddress:   ipAddress,
+		Details: map[string]interface{}{
+			"institution_id":   id.Hex(),
+			"institution_name": institution.Name,
+			"updated_fields":   update,
+			"updated_by_user":  true, // Flag to indicate this was updated by a regular user
 		},
 	})
 
@@ -334,4 +485,3 @@ func (s *InstitutionService) CountInstitutions(ctx context.Context, isActive *bo
 	}
 	return s.institutionRepo.Count(ctx, filter)
 }
-

@@ -358,7 +358,7 @@
     </div>
 
     <!-- Create User Modal -->
-    <div v-if="showCreateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click="showCreateModal = false">
+    <div v-if="showCreateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div class="relative top-10 mx-auto p-6 border w-full max-w-3xl shadow-lg rounded-lg bg-white my-10" @click.stop>
         <div>
           <!-- Modal Header -->
@@ -530,12 +530,12 @@
                         v-for="institution in institutionsStore.institutions" 
                         :key="institution.id" 
                         :value="institution.id"
-                        :title="`${institution.name} - ${institution.city}, ${institution.province || ''}`"
+                        :title="getInstitutionLocationTooltip(institution)"
                       >
-                        {{ institution.shortName || institution.name.substring(0, 30) }} - {{ institution.city }}
+                        {{ institution.name }}
                       </option>
                     </select>
-                    <p class="text-xs text-gray-500 mt-1">Select the user's affiliated institution (hover for full name)</p>
+                    <p class="text-xs text-gray-500 mt-1">Select the user's affiliated institution (hover for location details)</p>
                   </div>
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Specialty</label>
@@ -587,7 +587,7 @@
     </div>
 
     <!-- Edit User Modal -->
-    <div v-if="showEditModal && userToEdit" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click="closeEditModal">
+    <div v-if="showEditModal && userToEdit" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div class="relative top-10 mx-auto p-6 border w-full max-w-3xl shadow-lg rounded-lg bg-white my-10" @click.stop>
         <div>
           <!-- Modal Header -->
@@ -726,9 +726,9 @@
                         v-for="institution in institutionsStore.institutions" 
                         :key="institution.id" 
                         :value="institution.id"
-                        :title="`${institution.name} - ${institution.city}, ${institution.province || ''}`"
+                        :title="getInstitutionLocationTooltip(institution)"
                       >
-                        {{ institution.shortName || institution.name.substring(0, 30) }} - {{ institution.city }}
+                        {{ institution.name }}
                       </option>
                     </select>
                   </div>
@@ -817,7 +817,7 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click="cancelDelete">
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white" @click.stop>
         <div class="mt-3">
           <!-- Warning Icon -->
@@ -879,7 +879,7 @@
     </div>
 
     <!-- View User Details Modal -->
-    <div v-if="showViewModal && userToView" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @click="closeViewModal">
+    <div v-if="showViewModal && userToView" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div class="relative top-10 mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-lg bg-white" @click.stop>
         <!-- Modal Header -->
         <div class="flex items-center justify-between mb-6">
@@ -1134,6 +1134,15 @@ const getInstitutionName = (institutionId?: string): string => {
   if (!institutionId) return 'N/A'
   const institution = institutionsStore.institutions.find(i => i.id === institutionId)
   return institution ? `${institution.name}` : 'Unknown Institution'
+}
+
+// Helper to get institution location tooltip
+const getInstitutionLocationTooltip = (institution: any): string => {
+  const parts: string[] = []
+  if (institution.city) parts.push(institution.city)
+  if (institution.province) parts.push(institution.province)
+  if (institution.country) parts.push(institution.country)
+  return parts.length > 0 ? parts.join(', ') : 'Location not specified'
 }
 
 // Helper to get institution display with location

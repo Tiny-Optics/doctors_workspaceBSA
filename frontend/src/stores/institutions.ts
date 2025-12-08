@@ -172,12 +172,83 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     }
   }
 
+  // Create institution as a regular user
+  async function createUserInstitution(data: CreateInstitutionRequest): Promise<Institution | null> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch('/api/institutions/user/create', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to create institution'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = response.status === 409 ? 'Institution already exists' : errorMessage
+        }
+        throw new Error(errorMessage)
+      }
+
+      const institution: Institution = await response.json()
+      institutions.value.push(institution)
+      isLoading.value = false
+      return institution
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to create institution'
+      isLoading.value = false
+      throw err
+    }
+  }
+
   async function updateInstitution(id: string, data: UpdateInstitutionRequest): Promise<Institution | null> {
     isLoading.value = true
     error.value = null
 
     try {
       const response = await fetch(`/api/institutions/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to update institution'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = response.status === 404 ? 'Institution not found' : errorMessage
+        }
+        throw new Error(errorMessage)
+      }
+
+      const institution: Institution = await response.json()
+      const index = institutions.value.findIndex(i => i.id === id)
+      if (index !== -1 && institutions.value[index]) {
+        institutions.value[index] = institution
+      }
+      isLoading.value = false
+      return institution
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update institution'
+      isLoading.value = false
+      throw err
+    }
+  }
+
+  // Update institution as a regular user (only if they created it)
+  async function updateUserInstitution(id: string, data: UpdateInstitutionRequest): Promise<Institution | null> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(`/api/institutions/user/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(data)
@@ -304,6 +375,85 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     }
   }
 
+  async function uploadImage(file: File): Promise<string> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const token = authStore.token
+      const formData = new FormData()
+      formData.append('image', file)
+
+      const response = await fetch('/api/institutions/images/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Note: Don't set Content-Type, browser will set it with boundary for multipart
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to upload image'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = 'Failed to upload image'
+        }
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json()
+      isLoading.value = false
+      return data.imagePath
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to upload image'
+      isLoading.value = false
+      throw err
+    }
+  }
+
+  // Upload image for user-created institutions (no admin permission required)
+  async function uploadUserImage(file: File): Promise<string> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const token = authStore.token
+      const formData = new FormData()
+      formData.append('image', file)
+
+      const response = await fetch('/api/institutions/user/images/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // Note: Don't set Content-Type, browser will set it with boundary for multipart
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to upload image'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (parseError) {
+          errorMessage = 'Failed to upload image'
+        }
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json()
+      isLoading.value = false
+      return data.imagePath
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to upload image'
+      isLoading.value = false
+      throw err
+    }
+  }
+
   return {
     // State
     institutions,
@@ -316,10 +466,14 @@ export const useInstitutionsStore = defineStore('institutions', () => {
     fetchPublicInstitutions,
     fetchInstitution,
     createInstitution,
+    createUserInstitution,
     updateInstitution,
+    updateUserInstitution,
     deleteInstitution,
     activateInstitution,
-    deactivateInstitution
+    deactivateInstitution,
+    uploadImage,
+    uploadUserImage
   }
 })
 

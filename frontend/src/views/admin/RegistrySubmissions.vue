@@ -280,7 +280,7 @@
     </div>
 
     <!-- Submission Details Modal -->
-    <div v-if="selectedSubmission" @click="selectedSubmission = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div v-if="selectedSubmission" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div @click.stop class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div class="p-6">
           <div class="flex justify-between items-center mb-6">
@@ -416,7 +416,7 @@
     </div>
 
     <!-- Reject Reason Modal -->
-    <div v-if="showRejectModal" @click="closeRejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div v-if="showRejectModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div @click.stop class="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div class="p-6">
           <div class="flex justify-between items-center mb-4">

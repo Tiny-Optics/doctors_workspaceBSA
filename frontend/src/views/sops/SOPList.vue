@@ -213,7 +213,7 @@ async function downloadFile(file: SOPFile) {
   downloadingFile.value = file.path
   
   try {
-    const downloadLink = await sopService.getFileDownloadLink(category.value.id, file.name)
+    const downloadLink = await sopService.getFileDownloadLink(category.value.id, file.path)
     // Open in new tab for download
     window.open(downloadLink, '_blank')
   } catch (err: any) {

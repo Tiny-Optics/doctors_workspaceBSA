@@ -50,7 +50,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
 	institutionService := service.NewInstitutionService(institutionRepo, userRepo, auditRepo)
-	userService := service.NewUserService(userRepo, auditRepo, authService)
+	userService := service.NewUserService(userRepo, institutionRepo, auditRepo, authService)
 	auditService := service.NewAuditService(auditRepo, userRepo)
 
 	// Initialize encryption service
@@ -167,6 +167,18 @@ func (s *Server) RegisterRoutes() http.Handler {
 			institutions.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), institutionHandler.DeleteInstitution)
 			institutions.POST("/:id/activate", middleware.RequirePermission(models.PermManageUsers), institutionHandler.ActivateInstitution)
 			institutions.POST("/:id/deactivate", middleware.RequirePermission(models.PermManageUsers), institutionHandler.DeactivateInstitution)
+
+			// Institution image upload (requires manage users permission)
+			institutions.POST("/images/upload", middleware.RequirePermission(models.PermManageUsers), institutionHandler.UploadImage)
+
+			// User institution creation (any authenticated user can create)
+			institutions.POST("/user/create", institutionHandler.CreateUserInstitution)
+
+			// User institution update (users can only update institutions they created)
+			institutions.PUT("/user/:id", institutionHandler.UpdateUserInstitution)
+
+			// User institution image upload (any authenticated user can upload)
+			institutions.POST("/user/images/upload", institutionHandler.UploadUserImage)
 		}
 
 		// Stats routes (all protected)
