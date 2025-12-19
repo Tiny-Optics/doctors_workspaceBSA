@@ -64,6 +64,16 @@ migrate-institutions:
 	@echo "Migrating users to institution IDs..."
 	@go run cmd/migrate-institutions/main.go
 
+# Migrate user roles from haematologist/physician/data_capturer to user
+migrate-roles:
+	@echo "Migrating user roles..."
+	@go run cmd/migrate-roles/main.go
+
+# Check database connection and user counts before migration
+check-db:
+	@echo "Checking database connection and user counts..."
+	@go run cmd/check-db/main.go
+
 # Clean the binary
 clean:
 	@echo "Cleaning..."
@@ -86,4 +96,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest seed seed-users seed-30-users seed-institutions migrate-institutions
+.PHONY: all build run test clean watch docker-run docker-down itest seed seed-users seed-30-users seed-institutions migrate-institutions migrate-roles check-db

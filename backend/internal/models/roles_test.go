@@ -10,9 +10,7 @@ func TestUserRole_IsValid(t *testing.T) {
 		role UserRole
 		want bool
 	}{
-		{"Valid haematologist", RoleHaematologist, true},
-		{"Valid physician", RolePhysician, true},
-		{"Valid data capturer", RoleDataCapturer, true},
+		{"Valid user", RoleUser, true},
 		{"Valid admin", RoleAdmin, true},
 		{"Invalid role", UserRole("invalid"), false},
 		{"Empty role", UserRole(""), false},
@@ -33,9 +31,7 @@ func TestUserRole_IsClinical(t *testing.T) {
 		role UserRole
 		want bool
 	}{
-		{"Haematologist is clinical", RoleHaematologist, true},
-		{"Physician is clinical", RolePhysician, true},
-		{"Data capturer is clinical", RoleDataCapturer, true},
+		{"User is clinical", RoleUser, true},
 		{"Admin is not clinical", RoleAdmin, false},
 	}
 
@@ -70,7 +66,7 @@ func TestAdminLevel_IsValid(t *testing.T) {
 }
 
 func TestGetPermissionsForRole(t *testing.T) {
-	clinicalPermissions := []Permission{
+	userPermissions := []Permission{
 		PermViewSOPs,
 		PermDownloadSOPs,
 		PermAccessReferrals,
@@ -86,36 +82,24 @@ func TestGetPermissionsForRole(t *testing.T) {
 		mustHave   []Permission
 	}{
 		{
-			name:      "Haematologist permissions",
-			role:      RoleHaematologist,
+			name:      "User permissions",
+			role:      RoleUser,
 			wantCount: 5,
-			mustHave:  clinicalPermissions,
-		},
-		{
-			name:      "Physician permissions",
-			role:      RolePhysician,
-			wantCount: 5,
-			mustHave:  clinicalPermissions,
-		},
-		{
-			name:      "Data capturer permissions",
-			role:      RoleDataCapturer,
-			wantCount: 5,
-			mustHave:  clinicalPermissions,
+			mustHave:  userPermissions,
 		},
 		{
 			name:       "User manager permissions",
 			role:       RoleAdmin,
 			adminLevel: AdminLevelUserManager,
 			wantCount:  7,
-			mustHave:   append(clinicalPermissions, PermManageUsers, PermAssignRoles),
+			mustHave:   append(userPermissions, PermManageUsers, PermAssignRoles),
 		},
 		{
 			name:       "Super admin permissions",
 			role:       RoleAdmin,
 			adminLevel: AdminLevelSuperAdmin,
 			wantCount:  10,
-			mustHave: append(clinicalPermissions, PermManageUsers, PermAssignRoles,
+			mustHave: append(userPermissions, PermManageUsers, PermAssignRoles,
 				PermViewAuditLogs, PermManageSystem, PermDeleteUsers),
 		},
 	}
@@ -153,14 +137,14 @@ func TestHasPermission(t *testing.T) {
 		want       bool
 	}{
 		{
-			name:       "Clinical user has view SOPs",
-			role:       RoleHaematologist,
+			name:       "User has view SOPs",
+			role:       RoleUser,
 			permission: PermViewSOPs,
 			want:       true,
 		},
 		{
-			name:       "Clinical user does not have manage users",
-			role:       RolePhysician,
+			name:       "User does not have manage users",
+			role:       RoleUser,
 			permission: PermManageUsers,
 			want:       false,
 		},

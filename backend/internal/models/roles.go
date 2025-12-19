@@ -4,16 +4,14 @@ package models
 type UserRole string
 
 const (
-	RoleHaematologist UserRole = "haematologist"
-	RolePhysician     UserRole = "physician"
-	RoleDataCapturer  UserRole = "data_capturer"
-	RoleAdmin         UserRole = "admin"
+	RoleUser  UserRole = "user"
+	RoleAdmin UserRole = "admin"
 )
 
 // IsValid checks if the role is a valid UserRole
 func (r UserRole) IsValid() bool {
 	switch r {
-	case RoleHaematologist, RolePhysician, RoleDataCapturer, RoleAdmin:
+	case RoleUser, RoleAdmin:
 		return true
 	}
 	return false
@@ -21,11 +19,7 @@ func (r UserRole) IsValid() bool {
 
 // IsClinical returns true if the role is a clinical role (non-admin)
 func (r UserRole) IsClinical() bool {
-	switch r {
-	case RoleHaematologist, RolePhysician, RoleDataCapturer:
-		return true
-	}
-	return false
+	return r == RoleUser
 }
 
 // AdminLevel represents the level of administrative access
@@ -71,8 +65,8 @@ const (
 
 // GetPermissionsForRole returns all permissions for a given role and admin level
 func GetPermissionsForRole(role UserRole, adminLevel AdminLevel) []Permission {
-	// Base permissions for all clinical users
-	clinicalPermissions := []Permission{
+	// Base permissions for all users (non-admin)
+	userPermissions := []Permission{
 		PermViewSOPs,
 		PermDownloadSOPs,
 		PermAccessReferrals,
@@ -80,20 +74,20 @@ func GetPermissionsForRole(role UserRole, adminLevel AdminLevel) []Permission {
 		PermUploadEthicsApproval,
 	}
 
-	// If not an admin, return clinical permissions
+	// If not an admin, return user permissions
 	if role != RoleAdmin {
-		return clinicalPermissions
+		return userPermissions
 	}
 
 	// Admin permissions based on admin level
 	switch adminLevel {
 	case AdminLevelUserManager:
-		return append(clinicalPermissions, []Permission{
+		return append(userPermissions, []Permission{
 			PermManageUsers,
 			PermAssignRoles,
 		}...)
 	case AdminLevelSuperAdmin:
-		return append(clinicalPermissions, []Permission{
+		return append(userPermissions, []Permission{
 			PermManageUsers,
 			PermAssignRoles,
 			PermViewAuditLogs,
@@ -101,8 +95,8 @@ func GetPermissionsForRole(role UserRole, adminLevel AdminLevel) []Permission {
 			PermDeleteUsers,
 		}...)
 	default:
-		// Admin with no level defaults to clinical permissions
-		return clinicalPermissions
+		// Admin with no level defaults to user permissions
+		return userPermissions
 	}
 }
 
@@ -116,4 +110,3 @@ func HasPermission(role UserRole, adminLevel AdminLevel, permission Permission) 
 	}
 	return false
 }
-

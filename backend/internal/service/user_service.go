@@ -176,7 +176,7 @@ func (s *UserService) RegisterUser(ctx context.Context, req *models.RegisterUser
 		Username:     req.Username,
 		Email:        normalizedEmail,
 		PasswordHash: passwordHash,
-		Role:         models.RolePhysician,  // Default role for self-registration
+		Role:         models.RoleUser,       // Default role for self-registration
 		AdminLevel:   models.AdminLevelNone, // No admin privileges for self-registration
 		IsActive:     false,                 // Deactivated by default - requires admin approval
 		Profile: models.UserProfile{
@@ -513,10 +513,8 @@ func (s *UserService) CountUsersCreatedAfter(ctx context.Context, after time.Tim
 // GetRoleDistribution returns the count of users per role
 func (s *UserService) GetRoleDistribution(ctx context.Context) (map[models.UserRole]int64, error) {
 	roles := []models.UserRole{
-		models.RoleHaematologist,
-		models.RolePhysician,
-		models.RoleDataCapturer,
-		models.UserRole("admin"), // Admin role
+		models.RoleUser,
+		models.RoleAdmin,
 	}
 
 	distribution := make(map[models.UserRole]int64)

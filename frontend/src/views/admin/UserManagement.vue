@@ -63,9 +63,7 @@
             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
           >
             <option value="">All Roles</option>
-            <option value="haematologist">Haematologist</option>
-            <option value="physician">Physician</option>
-            <option value="data_capturer">Data Capturer</option>
+            <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
         </div>
@@ -488,9 +486,7 @@
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
                     >
                       <option value="">Select Role</option>
-                      <option value="haematologist">Haematologist</option>
-                      <option value="physician">Physician</option>
-                      <option value="data_capturer">Data Capturer</option>
+                      <option value="user">User</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
@@ -684,9 +680,7 @@
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-bloodsa-red focus:border-transparent"
                     >
                       <option value="">Select Role</option>
-                      <option value="haematologist">Haematologist</option>
-                      <option value="physician">Physician</option>
-                      <option value="data_capturer">Data Capturer</option>
+                      <option value="user">User</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
@@ -1220,9 +1214,7 @@ const getRoleDisplayName = (role: string) => {
 
 const getRoleBadgeClass = (role: string) => {
   const classes = {
-    haematologist: 'bg-red-100 text-red-800',
-    physician: 'bg-green-100 text-green-800',
-    data_capturer: 'bg-purple-100 text-purple-800',
+    user: 'bg-green-100 text-green-800',
     admin: 'bg-orange-100 text-orange-800'
   }
   return classes[role as keyof typeof classes] || 'bg-gray-100 text-gray-800'

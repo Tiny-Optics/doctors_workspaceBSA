@@ -208,9 +208,7 @@ const stats = ref({
 
 // Role distribution data
 const roleDistribution = ref([
-  { name: 'Haematologists', count: 0, color: '#DC2626' },
-  { name: 'Physicians', count: 0, color: '#059669' },
-  { name: 'Data Capturers', count: 0, color: '#7C3AED' },
+  { name: 'Users', count: 0, color: '#059669' },
   { name: 'Admins', count: 0, color: '#EA580C' }
 ])
 
@@ -257,9 +255,7 @@ const loadSystemStats = async () => {
     // Update role distribution
     if (data.roleDistribution && Array.isArray(data.roleDistribution)) {
       const roleMap: Record<string, { name: string; color: string }> = {
-        'haematologist': { name: 'Haematologists', color: '#DC2626' },
-        'physician': { name: 'Physicians', color: '#059669' },
-        'data_capturer': { name: 'Data Capturers', color: '#7C3AED' },
+        'user': { name: 'Users', color: '#059669' },
         'admin': { name: 'Admins', color: '#EA580C' }
       }
       
