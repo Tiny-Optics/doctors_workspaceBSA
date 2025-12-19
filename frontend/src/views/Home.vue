@@ -17,7 +17,7 @@
           
           <!-- Subheading -->
           <p class="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
-            A comprehensive platform for haematologists, physicians, and data capturers to access clinical resources, manage workflows, and collaborate effectively.
+            A comprehensive platform for healthcare professionals to access clinical resources, manage workflows, and collaborate effectively.
           </p>
 
           <!-- CTA Button -->
@@ -117,7 +117,7 @@
               </div>
               <h3 class="text-xl font-semibold text-gray-900 mb-2">Team Collaboration</h3>
               <p class="text-gray-600">
-                Connect with haematologists and physicians across South Africa for better patient care.
+                Connect with healthcare professionals across South Africa for better patient care.
               </p>
             </div>
           </div>

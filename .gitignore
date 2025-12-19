@@ -87,5 +87,7 @@ backend/cmd/seed-users/
 backend/cmd/seed-30-users/
 backend/cmd/seed-institutions/
 backend/cmd/migrate-institutions/
+backend/cmd/migrate-roles/
+backend/cmd/check-db/
 sshDetails.txt
 logs/

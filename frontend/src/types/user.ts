@@ -21,7 +21,7 @@ export interface UserProfile {
   phoneNumber?: string
 }
 
-export type UserRole = 'haematologist' | 'physician' | 'data_capturer' | 'admin'
+export type UserRole = 'user' | 'admin'
 export type AdminLevel = 'user_manager' | 'super_admin'
 
 export type Permission =
@@ -106,9 +106,7 @@ export function getUserFullName(user: User): string {
 // Helper function to get user role display name
 export function getUserRoleDisplayName(role: UserRole): string {
   const roleMap: Record<UserRole, string> = {
-    haematologist: 'Haematologist',
-    physician: 'Physician',
-    data_capturer: 'Data Capturer',
+    user: 'User',
     admin: 'Administrator'
   }
   return roleMap[role]
@@ -126,7 +124,7 @@ export function getAdminLevelDisplayName(adminLevel?: AdminLevel): string {
 
 // Permission matrix helper
 export function getPermissionsForRole(role: UserRole, adminLevel?: AdminLevel): Permission[] {
-  const clinicalPermissions: Permission[] = [
+  const userPermissions: Permission[] = [
     'view_sops',
     'download_sops',
     'access_referrals',
@@ -135,15 +133,15 @@ export function getPermissionsForRole(role: UserRole, adminLevel?: AdminLevel): 
   ]
 
   if (role !== 'admin') {
-    return clinicalPermissions
+    return userPermissions
   }
 
   switch (adminLevel) {
     case 'user_manager':
-      return [...clinicalPermissions, 'manage_users', 'assign_roles']
+      return [...userPermissions, 'manage_users', 'assign_roles']
     case 'super_admin':
       return [
-        ...clinicalPermissions,
+        ...userPermissions,
         'manage_users',
         'assign_roles',
         'view_audit_logs',
@@ -151,7 +149,7 @@ export function getPermissionsForRole(role: UserRole, adminLevel?: AdminLevel): 
         'delete_users'
       ]
     default:
-      return clinicalPermissions
+      return userPermissions
   }
 }
 

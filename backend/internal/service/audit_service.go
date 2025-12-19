@@ -252,14 +252,17 @@ func (s *AuditService) getEmailFromDetails(details map[string]interface{}) strin
 func (s *AuditService) getRoleFromDetails(details map[string]interface{}) string {
 	if role, ok := details["role"].(string); ok {
 		switch role {
-		case "haematologist":
-			return "Haematologist"
-		case "physician":
-			return "Physician"
-		case "data_capturer":
-			return "Data Capturer"
+		case "user":
+			return "User"
 		case "admin":
 			return "Admin"
+		// Legacy roles for backward compatibility with old audit logs
+		case "haematologist":
+			return "User (Haematologist)"
+		case "physician":
+			return "User (Physician)"
+		case "data_capturer":
+			return "User (Data Capturer)"
 		default:
 			return role
 		}
