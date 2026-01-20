@@ -729,9 +729,14 @@ func (s *RegistryService) sendSubmissionNotification(
 		return err
 	}
 
-	// Get Dropbox shared link for the folder
-	// The path needs to include the app directory structure
-	dropboxLink := fmt.Sprintf("https://www.dropbox.com/home/BLOODSA%%20Administrator/Apps/Doctors%%20Workspace/%s", submission.DocumentsPath)
+	// Get Dropbox shared link for the folder using the Dropbox API
+	dropboxLink, err := s.dropboxService.GetFolderShareLink(submission.DocumentsPath)
+	if err != nil {
+		// Log error but don't fail the email - use a fallback message
+		fmt.Printf("Warning: Failed to get Dropbox shared link for path %s: %v\n", submission.DocumentsPath, err)
+		// Fallback: construct a basic path (though this won't be a working link)
+		dropboxLink = fmt.Sprintf("Dropbox path: %s (shared link unavailable)", submission.DocumentsPath)
+	}
 
 	// Prepare email data
 	emailData := SubmissionNotificationData{
