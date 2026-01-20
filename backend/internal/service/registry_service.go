@@ -632,6 +632,9 @@ func (s *RegistryService) SubmitForm(
 	submission.DocumentsPath = dropboxPath
 
 	uploadedFiles := []string{}
+	// Track used filenames to handle duplicates
+	usedFilenames := make(map[string]bool)
+
 	for _, fileHeader := range files {
 		file, err := fileHeader.Open()
 		if err != nil {
@@ -639,13 +642,34 @@ func (s *RegistryService) SubmitForm(
 		}
 		defer file.Close()
 
-		// Upload to Dropbox
-		remotePath := filepath.Join(dropboxPath, fileHeader.Filename)
+		// Generate a unique filename if duplicates exist
+		originalFilename := fileHeader.Filename
+		uniqueFilename := originalFilename
+
+		// If filename already used, append a counter
+		if usedFilenames[uniqueFilename] {
+			ext := filepath.Ext(originalFilename)
+			nameWithoutExt := strings.TrimSuffix(originalFilename, ext)
+			counter := 1
+			for {
+				uniqueFilename = fmt.Sprintf("%s (%d)%s", nameWithoutExt, counter, ext)
+				if !usedFilenames[uniqueFilename] {
+					break
+				}
+				counter++
+			}
+		}
+
+		// Mark this filename as used
+		usedFilenames[uniqueFilename] = true
+
+		// Upload to Dropbox with unique filename
+		remotePath := filepath.Join(dropboxPath, uniqueFilename)
 		if err := s.dropboxService.UploadFile(ctx, file, remotePath); err != nil {
 			return nil, fmt.Errorf("failed to upload file to Dropbox: %w", err)
 		}
 
-		uploadedFiles = append(uploadedFiles, fileHeader.Filename)
+		uploadedFiles = append(uploadedFiles, uniqueFilename)
 	}
 
 	submission.UploadedDocuments = uploadedFiles
