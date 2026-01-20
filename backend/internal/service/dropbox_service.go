@@ -19,6 +19,7 @@ import (
 
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox"
 	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox/files"
+	"github.com/dropbox/dropbox-sdk-go-unofficial/v6/dropbox/sharing"
 )
 
 var (
@@ -45,9 +46,10 @@ type DropboxService struct {
 	encryptionService *EncryptionService
 
 	// In-memory cache to avoid DB hits on every request
-	cachedConfig *models.DropboxConfig
-	cachedClient files.Client
-	cacheMutex   sync.RWMutex
+	cachedConfig     *models.DropboxConfig
+	cachedClient     files.Client
+	cachedSharingClient sharing.Client
+	cacheMutex       sync.RWMutex
 
 	// Configuration
 	isConfigured   bool
@@ -131,6 +133,7 @@ func (s *DropboxService) loadConfigFromDB(ctx context.Context) error {
 
 	s.cachedConfig = config
 	s.cachedClient = files.New(dropboxConfig)
+	s.cachedSharingClient = sharing.New(dropboxConfig)
 	s.isConfigured = true
 	fmt.Println("DEBUG: loadConfigFromDB: Config loaded and cached successfully")
 
@@ -276,6 +279,7 @@ func (s *DropboxService) refreshAccessToken(ctx context.Context) error {
 		LogLevel: dropbox.LogOff,
 	}
 	s.cachedClient = files.New(dropboxConfig)
+	s.cachedSharingClient = sharing.New(dropboxConfig)
 	fmt.Println("DEBUG: Dropbox client created successfully")
 
 	// Reset failure count on success
@@ -654,6 +658,61 @@ func (s *DropboxService) GetFileDownloadLink(relativePath string) (string, error
 		return nil
 	})
 	return link, err
+}
+
+// GetFolderShareLink generates a shared link for a folder
+// If a shared link already exists, it returns the existing link
+func (s *DropboxService) GetFolderShareLink(relativePath string) (string, error) {
+	ctx := context.Background()
+	if err := s.ensureValidToken(ctx); err != nil {
+		return "", err
+	}
+
+	s.cacheMutex.RLock()
+	sharingClient := s.cachedSharingClient
+	parentFolder := s.cachedConfig.ParentFolder
+	s.cacheMutex.RUnlock()
+
+	fullPath := s.getFullPath(relativePath, parentFolder)
+
+	// Try to create a shared link
+	arg := sharing.NewCreateSharedLinkWithSettingsArg(fullPath)
+	result, err := sharingClient.CreateSharedLinkWithSettings(arg)
+	if err != nil {
+		// Check if link already exists - if so, get the existing link
+		if strings.Contains(err.Error(), "shared_link_already_exists") || strings.Contains(err.Error(), "SharedLinkAlreadyExists") {
+			// Get the existing shared link
+			listArg := sharing.NewListSharedLinksArg()
+			listArg.Path = fullPath
+			listResult, listErr := sharingClient.ListSharedLinks(listArg)
+			if listErr != nil {
+				return "", fmt.Errorf("failed to get existing shared link: %w", listErr)
+			}
+			if len(listResult.Links) > 0 {
+				// Extract URL from the shared link metadata
+				switch link := listResult.Links[0].(type) {
+				case *sharing.FolderLinkMetadata:
+					return link.Url, nil
+				case *sharing.FileLinkMetadata:
+					return link.Url, nil
+				default:
+					return "", fmt.Errorf("unexpected link metadata type")
+				}
+			}
+			return "", fmt.Errorf("shared link exists but could not be retrieved")
+		}
+		return "", fmt.Errorf("failed to create shared link: %w", err)
+	}
+
+	// Extract URL from result
+	switch meta := result.(type) {
+	case *sharing.FolderLinkMetadata:
+		return meta.Url, nil
+	case *sharing.FileLinkMetadata:
+		return meta.Url, nil
+	default:
+		return "", fmt.Errorf("unexpected metadata type for shared link")
+	}
 }
 
 // GetFileMetadata retrieves metadata for a specific file
