@@ -54,7 +54,9 @@
         
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 min-w-0">
-            <h3 class="text-xl font-semibold text-gray-700 truncate min-w-0">{{ item.name }}</h3>
+            <div class="file-name-container flex-1 min-w-0 overflow-hidden" :title="item.name">
+              <h3 class="text-xl font-semibold text-gray-700 file-name">{{ item.name }}</h3>
+            </div>
             <!-- Expand/Collapse Icon for folders -->
             <svg v-if="item.isFolder" class="w-5 h-5 text-gray-400 transition-transform flex-shrink-0" :class="{ 'rotate-90': isExpanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -179,5 +181,53 @@ const getFileIcon = (filename: string): string => {
 }
 .text-bloodsa-red {
   color: #8B0000;
+}
+
+.file-name-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.file-name {
+  display: inline-block;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Marquee animation on hover - scrolls text horizontally to reveal overflow */
+.file-name-container:hover .file-name {
+  animation: marquee 12s linear infinite;
+  text-overflow: clip;
+  max-width: none;
+  will-change: transform;
+}
+
+/* Pause animation when directly hovering the text */
+.file-name-container:hover .file-name:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  40% {
+    /* Scroll left by a large amount to reveal the end of long text */
+    /* -800px should handle most practical filename overflow cases */
+    transform: translateX(-800px);
+  }
+  50% {
+    /* Hold at the end position briefly */
+    transform: translateX(-800px);
+  }
+  90% {
+    /* Scroll back to start */
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 </style>
