@@ -127,7 +127,7 @@
               </div>
               <h3 class="text-xl font-semibold text-gray-900 mb-3">Standard Operating Procedures</h3>
               <p class="text-gray-600 mb-6 leading-relaxed">
-                Access comprehensive SOPs for Anemia, Lymphoma, Myeloma, and General Business procedures.
+                Access comprehensive SOPs for clinical haematology, from doctor and nursing care to pharmacy and quality management
               </p>
               <div class="flex items-center text-bloodsa-red font-medium group-hover:text-red-700">
                 View SOPs
