@@ -374,6 +374,122 @@ func (s *EmailService) SendPasswordResetEmail(smtpConfig models.SMTPConfig, user
 	return nil
 }
 
+// SendAccountActivatedEmail sends an email to the user when their account is activated
+func (s *EmailService) SendAccountActivatedEmail(smtpConfig models.SMTPConfig, userEmail, userName string) error {
+	// Validate SMTP config
+	if !smtpConfig.IsComplete() {
+		return ErrIncompleteSMTPConfig
+	}
+
+	// Decrypt password
+	decryptedPassword, err := s.encryptionService.Decrypt(smtpConfig.Password)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt SMTP password: %w", err)
+	}
+
+	subject := "Your Account Has Been Activated - BLOODSA Doctor's Workspace"
+	htmlBody := s.generateAccountActivatedEmailHTML(userName)
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", smtpConfig.FromEmail)
+	m.SetHeader("To", userEmail)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", htmlBody)
+
+	d := gomail.NewDialer(smtpConfig.Host, smtpConfig.Port, smtpConfig.Username, decryptedPassword)
+	if err := d.DialAndSend(m); err != nil {
+		return fmt.Errorf("%w: %v", ErrEmailSendFailed, err)
+	}
+
+	return nil
+}
+
+// generateAccountActivatedEmailHTML generates the HTML body for account activated email
+func (s *EmailService) generateAccountActivatedEmailHTML(userName string) string {
+	currentYear := time.Now().Year()
+	return fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #8B0000;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 40px;
+            border: 1px solid #ddd;
+            border-radius: 0 0 8px 8px;
+        }
+        .highlight {
+            background-color: #f0fdf4;
+            border-left: 4px solid #059669;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #8B0000;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Account Activated</h1>
+            <p>BLOODSA Doctor's Workspace</p>
+        </div>
+        <div class="content">
+            <p>Dear %s,</p>
+            
+            <p>Your account for the BLOODSA Doctor's Workspace has been approved and activated by an administrator.</p>
+            
+            <div class="highlight">
+                <p style="margin: 0;"><strong>You can now sign in</strong> using your email and password to access the workspace.</p>
+            </div>
+            
+            <p>If you have any questions or need assistance, please contact the system administrator.</p>
+            
+            <div class="footer">
+                <p>This is an automated message from the BLOODSA Doctor's Workspace system.</p>
+                <p>© %d BLOODSA. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+`, userName, currentYear)
+}
+
 // generatePasswordResetEmailHTML generates the HTML body for password reset email
 func (s *EmailService) generatePasswordResetEmailHTML(code, userName string) string {
 	currentYear := time.Now().Year()

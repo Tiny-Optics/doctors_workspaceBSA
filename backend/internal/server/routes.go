@@ -50,7 +50,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// Initialize services
 	authService := service.NewAuthService(userRepo, sessionRepo, auditRepo)
 	institutionService := service.NewInstitutionService(institutionRepo, userRepo, auditRepo)
-	userService := service.NewUserService(userRepo, institutionRepo, auditRepo, authService)
 	auditService := service.NewAuditService(auditRepo, userRepo)
 
 	// Initialize encryption service
@@ -83,6 +82,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		dropboxService,
 		emailService,
 	)
+	userService := service.NewUserService(userRepo, institutionRepo, auditRepo, authService, emailService, registryService)
 	referralService := service.NewReferralService(referralConfigRepo, auditRepo)
 
 	// Initialize password reset service
