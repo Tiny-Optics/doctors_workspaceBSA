@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -24,6 +25,8 @@ type UserService struct {
 	institutionRepo *repository.InstitutionRepository
 	auditRepo       *repository.AuditRepository
 	authService     *AuthService
+	emailService    *EmailService
+	registryService *RegistryService
 }
 
 // NewUserService creates a new UserService
@@ -32,12 +35,16 @@ func NewUserService(
 	institutionRepo *repository.InstitutionRepository,
 	auditRepo *repository.AuditRepository,
 	authService *AuthService,
+	emailService *EmailService,
+	registryService *RegistryService,
 ) *UserService {
 	return &UserService{
 		userRepo:        userRepo,
 		institutionRepo: institutionRepo,
 		auditRepo:       auditRepo,
 		authService:     authService,
+		emailService:    emailService,
+		registryService: registryService,
 	}
 }
 
@@ -448,6 +455,20 @@ func (s *UserService) ActivateUser(ctx context.Context, userID primitive.ObjectI
 			"email":    targetUser.Email,
 		},
 	})
+
+	// Send activation email to user (non-blocking; log failure but do not fail activation)
+	if s.emailService != nil && s.registryService != nil {
+		smtpConfig, err := s.registryService.GetPublicSMTPConfig(ctx)
+		if err == nil && smtpConfig != nil && smtpConfig.IsComplete() {
+			userName := targetUser.Profile.FirstName + " " + targetUser.Profile.LastName
+			if userName == " " {
+				userName = targetUser.Username
+			}
+			if err := s.emailService.SendAccountActivatedEmail(*smtpConfig, targetUser.Email, userName); err != nil {
+				fmt.Printf("Warning: Failed to send account activation email to %s: %v\n", targetUser.Email, err)
+			}
+		}
+	}
 
 	return nil
 }
