@@ -39,6 +39,163 @@ type SubmissionNotificationData struct {
 	SubmittedAt  string
 }
 
+// NewUserRegistrationNotificationData represents data for new user registration notification email
+type NewUserRegistrationNotificationData struct {
+	UserName        string
+	UserEmail       string
+	InstitutionName string
+	RegisteredAt    string
+	AdminUsersURL   string
+}
+
+// SendNewUserRegistrationNotification sends an email to admins when a new user registers
+func (s *EmailService) SendNewUserRegistrationNotification(
+	smtpConfig models.SMTPConfig,
+	recipients []string,
+	data NewUserRegistrationNotificationData,
+) error {
+	if len(recipients) == 0 {
+		return nil
+	}
+	if !smtpConfig.IsComplete() {
+		return ErrIncompleteSMTPConfig
+	}
+
+	decryptedPassword, err := s.encryptionService.Decrypt(smtpConfig.Password)
+	if err != nil {
+		return fmt.Errorf("failed to decrypt SMTP password: %w", err)
+	}
+
+	subject := fmt.Sprintf("New User Registration: %s", data.UserName)
+	htmlBody, err := s.generateNewUserRegistrationEmailHTML(data)
+	if err != nil {
+		return fmt.Errorf("failed to generate email body: %w", err)
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", smtpConfig.FromEmail)
+	m.SetHeader("To", recipients...)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", htmlBody)
+
+	d := gomail.NewDialer(smtpConfig.Host, smtpConfig.Port, smtpConfig.Username, decryptedPassword)
+	if err := d.DialAndSend(m); err != nil {
+		return fmt.Errorf("%w: %v", ErrEmailSendFailed, err)
+	}
+
+	return nil
+}
+
+// generateNewUserRegistrationEmailHTML generates the HTML body for new user registration notification
+func (s *EmailService) generateNewUserRegistrationEmailHTML(data NewUserRegistrationNotificationData) (string, error) {
+	tmpl := `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #8B0000;
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 40px;
+            border: 1px solid #ddd;
+            border-radius: 0 0 8px 8px;
+        }
+        .info-row {
+            margin: 15px 0;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #8B0000;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New User Registration</h1>
+            <p>BLOODSA Doctor's Workspace</p>
+        </div>
+        <div class="content">
+            <p>A new user has signed up for the Doctor's Workspace and is pending approval.</p>
+            
+            <div class="info-row">
+                <span class="label">Name:</span> {{.UserName}}
+            </div>
+            
+            <div class="info-row">
+                <span class="label">Email:</span> {{.UserEmail}}
+            </div>
+            
+            {{if .InstitutionName}}
+            <div class="info-row">
+                <span class="label">Institution:</span> {{.InstitutionName}}
+            </div>
+            {{end}}
+            
+            <div class="info-row">
+                <span class="label">Registered at:</span> {{.RegisteredAt}}
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{.AdminUsersURL}}" class="button">View users and approve</a>
+            </div>
+            
+            <div class="footer">
+                <p>This is an automated notification from the BLOODSA Doctor's Workspace.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+`
+
+	t, err := template.New("email").Parse(tmpl)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, data); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
 // SendSubmissionNotification sends an email notification for a new submission
 func (s *EmailService) SendSubmissionNotification(
 	smtpConfig models.SMTPConfig,

@@ -216,6 +216,32 @@ func (s *UserService) RegisterUser(ctx context.Context, req *models.RegisterUser
 		},
 	})
 
+	// Notify admins (notification emails list) that a new user registered (non-blocking)
+	const adminUsersURL = "https://workspace.bloodsa.org.za/admin/users"
+	if s.emailService != nil && s.registryService != nil {
+		config, err := s.registryService.GetConfiguration(ctx)
+		if err == nil && config != nil && config.SMTPConfig.IsComplete() && len(config.NotificationEmails) > 0 {
+			userName := strings.TrimSpace(req.FirstName + " " + req.LastName)
+			if userName == "" {
+				userName = req.Username
+			}
+			institutionName := ""
+			if inst, _ := s.institutionRepo.FindByID(ctx, institutionID); inst != nil {
+				institutionName = inst.Name
+			}
+			data := NewUserRegistrationNotificationData{
+				UserName:        userName,
+				UserEmail:       user.Email,
+				InstitutionName: institutionName,
+				RegisteredAt:    time.Now().Format("2 Jan 2006, 15:04 MST"),
+				AdminUsersURL:   adminUsersURL,
+			}
+			if err := s.emailService.SendNewUserRegistrationNotification(config.SMTPConfig, config.NotificationEmails, data); err != nil {
+				fmt.Printf("Warning: Failed to send new user registration notification to admins: %v\n", err)
+			}
+		}
+	}
+
 	return user, nil
 }
 
