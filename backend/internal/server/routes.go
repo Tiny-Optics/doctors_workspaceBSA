@@ -17,6 +17,8 @@ import (
 func (s *Server) RegisterRoutes() http.Handler {
 	r := gin.Default()
 
+	//lovely code
+
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "http://169.255.58.102", "https://workspace.bloodsa.org.za"}, // Dev and production URLs
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
