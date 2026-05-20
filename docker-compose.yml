@@ -1,6 +1,7 @@
 services:
-  # MongoDB Database
+  # Local MongoDB (optional — use profile when not using Atlas)
   mongodb:
+    profiles: ["local-db"]
     image: mongo:latest
     container_name: bloodsa_mongodb
     restart: unless-stopped
@@ -28,13 +29,12 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-8080}:8080"
+    env_file:
+      - ./backend/.env
     environment:
       - PORT=${PORT:-8080}
       - APP_ENV=${APP_ENV:-local}
-      - BLUEPRINT_DB_HOST=mongodb
-      - BLUEPRINT_DB_PORT=27017
-      - BLUEPRINT_DB_USERNAME=${BLUEPRINT_DB_USERNAME:-melkey}
-      - BLUEPRINT_DB_ROOT_PASSWORD=${BLUEPRINT_DB_ROOT_PASSWORD:-password1234}
+      - BLUEPRINT_DB_DATABASE=${BLUEPRINT_DB_DATABASE:-doctors_workspace}
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     volumes:
@@ -47,6 +47,7 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+        required: false
     command: air
 
   # Frontend (Vue.js with Vite hot-reloading)
