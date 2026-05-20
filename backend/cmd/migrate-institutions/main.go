@@ -4,65 +4,32 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
+	"backend/internal/database"
 	"backend/internal/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
-	// Get environment variables
-	host := os.Getenv("BLUEPRINT_DB_HOST")
-	port := os.Getenv("BLUEPRINT_DB_PORT")
-	username := os.Getenv("BLUEPRINT_DB_USERNAME")
-	password := os.Getenv("BLUEPRINT_DB_ROOT_PASSWORD")
-	databaseName := os.Getenv("BLUEPRINT_DB_DATABASE")
-
-	if host == "" {
-		host = "localhost"
-	}
-	if port == "" {
-		port = "27017"
-	}
-	if databaseName == "" {
-		databaseName = "doctors_workspace"
-	}
-
-	// Build connection URI
-	var uri string
-	if username != "" && password != "" {
-		uri = fmt.Sprintf("mongodb://%s:%s@%s:%s", username, password, host, port)
-	} else {
-		uri = fmt.Sprintf("mongodb://%s:%s", host, port)
-	}
-
-	// Connect to MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	client, db, err := database.Connect(ctx)
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
-			log.Fatalf("Failed to disconnect from MongoDB: %v", err)
+		if err := client.Disconnect(ctx); err != nil {
+			log.Printf("disconnect: %v", err)
 		}
 	}()
 
-	// Ping the database to verify connection
-	err = client.Ping(ctx, nil)
-	if err != nil {
-		log.Fatalf("Failed to ping MongoDB: %v", err)
-	}
+	fmt.Printf("Connected to %s (database: %s)\n", database.ConnectionLabel(), database.DatabaseName())
 
-	db := client.Database(databaseName)
 	usersCollection := db.Collection("users")
 	institutionsCollection := db.Collection("institutions")
 
