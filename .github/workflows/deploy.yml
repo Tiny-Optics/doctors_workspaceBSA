@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-and-push:
     name: Build and Push Images
@@ -42,7 +46,7 @@ jobs:
           push: true
           tags: ghcr.io/tiny-optics/doctors-frontend:latest
           build-args: |
-            VITE_API_URL=http://169.255.58.102/api
+            VITE_API_URL=https://workspace.bloodsa.org.za/api
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
