@@ -42,6 +42,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	auditRepo := repository.NewAuditRepository(db)
 	institutionRepo := repository.NewInstitutionRepository(db)
 	sopCategoryRepo := repository.NewSOPCategoryRepository(db)
+	workingPartyCategoryRepo := repository.NewWorkingPartyCategoryRepository(db)
 	dropboxConfigRepo := repository.NewDropboxConfigRepository(db)
 	registryConfigRepo := repository.NewRegistryConfigRepository(db)
 	registryFormRepo := repository.NewRegistryFormRepository(db)
@@ -64,6 +65,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	dropboxService := service.NewDropboxService(dropboxConfigRepo, encryptionService)
 	dropboxOAuthService := service.NewDropboxOAuthService(dropboxConfigRepo, auditRepo, encryptionService, dropboxService)
 	sopCategoryService := service.NewSOPCategoryService(sopCategoryRepo, dropboxService, auditRepo, userRepo)
+	workingPartyCategoryService := service.NewWorkingPartyCategoryService(workingPartyCategoryRepo, dropboxService, auditRepo, userRepo)
 
 	// Initialize Dropbox background refresh service
 	dropboxRefreshService := service.NewDropboxRefreshService(dropboxService)
@@ -108,6 +110,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	institutionHandler := handlers.NewInstitutionHandler(institutionService)
 	statsHandler := handlers.NewStatsHandler(userService, institutionService, auditService, sopCategoryService)
 	sopCategoryHandler := handlers.NewSOPCategoryHandler(sopCategoryService)
+	workingPartyCategoryHandler := handlers.NewWorkingPartyCategoryHandler(workingPartyCategoryService)
 	dropboxAdminHandler := handlers.NewDropboxAdminHandler(dropboxOAuthService)
 	registryHandler := handlers.NewRegistryHandler(registryService, encryptionService)
 	referralHandler := handlers.NewReferralHandler(referralService)
@@ -213,6 +216,25 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 			// Seeding (super admin only)
 			sops.POST("/seed", middleware.RequirePermission(models.PermDeleteUsers), sopCategoryHandler.SeedCategories)
+		}
+
+		// Working Parties routes
+		workingParties := api.Group("/working-parties")
+		workingParties.Use(middleware.AuthMiddleware(authService))
+		{
+			wpCategories := workingParties.Group("/categories")
+			{
+				wpCategories.GET("", workingPartyCategoryHandler.ListCategories)
+				wpCategories.GET("/:id", workingPartyCategoryHandler.GetCategory)
+				wpCategories.GET("/:id/files", workingPartyCategoryHandler.GetCategoryFiles)
+				wpCategories.GET("/:id/files/download", workingPartyCategoryHandler.DownloadFile)
+
+				wpCategories.POST("", middleware.RequirePermission(models.PermDeleteUsers), workingPartyCategoryHandler.CreateCategory)
+				wpCategories.PUT("/:id", middleware.RequirePermission(models.PermDeleteUsers), workingPartyCategoryHandler.UpdateCategory)
+				wpCategories.DELETE("/:id", middleware.RequirePermission(models.PermDeleteUsers), workingPartyCategoryHandler.DeleteCategory)
+			}
+
+			workingParties.POST("/images/upload", middleware.RequirePermission(models.PermDeleteUsers), workingPartyCategoryHandler.UploadImage)
 		}
 
 		// Admin routes (super admin only)

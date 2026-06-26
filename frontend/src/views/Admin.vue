@@ -148,6 +148,10 @@ const pageTitle = computed(() => {
       return 'System Settings'
     case 'admin-audit-logs':
       return 'Audit Logs'
+    case 'admin-sops':
+      return 'SOP Management'
+    case 'admin-working-parties':
+      return 'Working Party Management'
     default:
       return 'Admin Panel'
   }
@@ -163,6 +167,10 @@ const pageDescription = computed(() => {
       return 'Configure system-wide settings and preferences'
     case 'admin-audit-logs':
       return 'View system activity and user actions for security and compliance'
+    case 'admin-sops':
+      return 'Manage Standard Operating Procedure categories'
+    case 'admin-working-parties':
+      return 'Manage Working Party categories'
     default:
       return 'Administrative controls and system management'
   }
