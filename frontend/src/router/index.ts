@@ -128,7 +128,13 @@ const router = createRouter({
     {
       path: '/working-parties',
       name: 'working-parties',
-      component: () => import('../views/ComingSoon.vue'),
+      component: () => import('../views/working-parties/WorkingParties.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/working-parties/:slug',
+      name: 'working-parties-list',
+      component: () => import('../views/working-parties/WorkingPartyList.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -166,6 +172,11 @@ const router = createRouter({
           path: 'sops',
           name: 'admin-sops',
           component: () => import('../views/admin/SOPManagement.vue')
+        },
+        {
+          path: 'working-parties',
+          name: 'admin-working-parties',
+          component: () => import('../views/admin/WorkingPartyManagement.vue')
         },
         {
           path: 'registry',
